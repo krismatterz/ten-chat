@@ -5,6 +5,15 @@
 /.pnp
 .pnp.js
 
+# bun
+bun-cache
+bun.lock
+bun.lockb
+
+# Cursor
+.cursorrules
+.cursor
+
 # testing
 /coverage
 

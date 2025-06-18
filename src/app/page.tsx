@@ -1,53 +1,66 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 
-import { LatestPost } from "~/app/_components/post";
-import { HydrateClient, api } from "~/trpc/server";
+export default async function HomePage() {
+  const user = await currentUser();
 
-export default async function Home() {
-	const hello = await api.post.hello({ text: "from tRPC" });
+  if (user) {
+    redirect("/chat");
+  }
 
-	void api.post.getLatest.prefetch();
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
+        <div className="text-center">
+          <h1 className="font-extrabold text-5xl tracking-tight text-neutral-900 dark:text-neutral-100 sm:text-[5rem]">
+            Ten <span className="text-blue-600">Chat</span>
+          </h1>
+          <p className="mt-4 text-xl text-neutral-600 dark:text-neutral-400">
+            Modern AI-powered conversations
+          </p>
+        </div>
 
-	return (
-		<HydrateClient>
-			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-				<div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-					<h1 className="font-extrabold text-5xl tracking-tight sm:text-[5rem]">
-						Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
-					</h1>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-						<Link
-							className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-							href="https://create.t3.gg/en/usage/first-steps"
-							target="_blank"
-						>
-							<h3 className="font-bold text-2xl">First Steps →</h3>
-							<div className="text-lg">
-								Just the basics - Everything you need to know to set up your
-								database and authentication.
-							</div>
-						</Link>
-						<Link
-							className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-							href="https://create.t3.gg/en/introduction"
-							target="_blank"
-						>
-							<h3 className="font-bold text-2xl">Documentation →</h3>
-							<div className="text-lg">
-								Learn more about Create T3 App, the libraries it uses, and how
-								to deploy it.
-							</div>
-						</Link>
-					</div>
-					<div className="flex flex-col items-center gap-2">
-						<p className="text-2xl text-white">
-							{hello ? hello.greeting : "Loading tRPC query..."}
-						</p>
-					</div>
+        <div className="flex gap-4">
+          <SignInButton mode="modal">
+            <button
+              type="button"
+              className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white shadow-lg transition-colors hover:bg-blue-700"
+            >
+              Sign In
+            </button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <button
+              type="button"
+              className="rounded-lg border border-neutral-300 px-6 py-3 font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            >
+              Sign Up
+            </button>
+          </SignUpButton>
+        </div>
 
-					<LatestPost />
-				</div>
-			</main>
-		</HydrateClient>
-	);
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
+          <div className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/50 p-6 shadow-lg backdrop-blur-sm dark:bg-neutral-800/50">
+            <h3 className="font-bold text-2xl text-neutral-900 dark:text-neutral-100">
+              AI-Powered 🤖
+            </h3>
+            <div className="text-lg text-neutral-600 dark:text-neutral-400">
+              Chat with multiple AI models including Anthropic Claude, OpenAI
+              GPT, and Groq.
+            </div>
+          </div>
+          <div className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/50 p-6 shadow-lg backdrop-blur-sm dark:bg-neutral-800/50">
+            <h3 className="font-bold text-2xl text-neutral-900 dark:text-neutral-100">
+              Real-time ⚡
+            </h3>
+            <div className="text-lg text-neutral-600 dark:text-neutral-400">
+              Experience instant messaging with real-time synchronization across
+              all your devices.
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
