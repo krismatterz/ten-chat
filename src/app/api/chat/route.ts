@@ -121,8 +121,9 @@ export async function POST(req: Request) {
       attachments,
     } = await req.json();
 
-    console.log("API Route - Provider:", provider, "Model:", model);
-    console.log("Messages count:", messages?.length);
+    console.log("🚀 API Route - Provider:", provider, "Model:", model);
+    console.log("📝 Messages count:", messages?.length);
+    console.log("📎 Attachments:", attachments?.length || 0);
 
     if (!messages || !Array.isArray(messages)) {
       return new Response("Invalid messages format", { status: 400 });
@@ -158,11 +159,13 @@ export async function POST(req: Request) {
         break;
       case "openrouter":
         if (!env.OPENROUTER_API_KEY) {
+          console.error("❌ OpenRouter API key not configured");
           return new Response("OpenRouter API key not configured", {
             status: 500,
           });
         }
         selectedModel = model || "anthropic/claude-3.5-sonnet";
+        console.log("🔧 OpenRouter selected model:", selectedModel);
         aiModel = openrouter(selectedModel);
         break;
       case "perplexity":
@@ -213,9 +216,15 @@ export async function POST(req: Request) {
     });
 
     // Use AI SDK v4 method
+    console.log("✅ Streaming response created successfully");
     return result.toDataStreamResponse();
   } catch (error) {
-    console.error("Chat API error:", error);
+    console.error("💥 Chat API error:", error);
+    console.error("💥 Error details:", {
+      name: error instanceof Error ? error.name : "Unknown",
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return new Response("Internal server error", { status: 500 });
   }
 }

@@ -126,22 +126,28 @@ export function Chat({ chatId }: ChatProps) {
       attachments: attachments.length > 0 ? attachments : undefined,
     },
     onFinish: async (message) => {
+      console.log("🎯 onFinish called with:", message.id);
       // Save AI response to Convex
       if (conversationId) {
-        // Extract text content from message
-        const textContent = message.content || "";
+        try {
+          // Extract text content from message
+          const textContent = message.content || "";
 
-        await addMessage({
-          conversationId,
-          role: "assistant",
-          content: textContent,
-          model: selectedModel,
-          provider: selectedProvider,
-        });
+          await addMessage({
+            conversationId,
+            role: "assistant",
+            content: textContent,
+            model: selectedModel,
+            provider: selectedProvider,
+          });
+          console.log("✅ Message saved to Convex");
+        } catch (error) {
+          console.error("❌ Failed to save message to Convex:", error);
+        }
       }
     },
     onError: (error) => {
-      console.error("Chat error:", error);
+      console.error("💥 Chat API error:", error);
     },
   });
 

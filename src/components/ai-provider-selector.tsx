@@ -25,7 +25,6 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
-  CommandItem,
   CommandList,
 } from "./ui/command";
 import { ThinkingModeSelector } from "./ui/thinking-mode-selector";
@@ -390,10 +389,9 @@ export function AIProviderSelector({
               {organizedModels.favorites.length > 0 && (
                 <CommandGroup heading="⭐ Favorites">
                   {organizedModels.favorites.map((model) => (
-                    <CommandItem
+                    <div
                       key={`${model.provider}-${model.id}`}
-                      value={`${model.displayName} ${model.providerName}`}
-                      onSelect={() => {
+                      onClick={() => {
                         console.log(
                           "Favorite model selected:",
                           model.id,
@@ -401,7 +399,7 @@ export function AIProviderSelector({
                         );
                         handleModelSelect(model.provider, model.id);
                       }}
-                      className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm"
                     >
                       <div className="flex-shrink-0">
                         {getProviderIcon(model.provider)}
@@ -454,7 +452,7 @@ export function AIProviderSelector({
                             : "opacity-0"
                         )}
                       />
-                    </CommandItem>
+                    </div>
                   ))}
                 </CommandGroup>
               )}
@@ -463,10 +461,9 @@ export function AIProviderSelector({
               {organizedModels.others.length > 0 && (
                 <CommandGroup heading="🤖 All Models">
                   {organizedModels.others.map((model) => (
-                    <CommandItem
+                    <div
                       key={`${model.provider}-${model.id}`}
-                      value={`${model.displayName} ${model.providerName}`}
-                      onSelect={() => {
+                      onClick={() => {
                         console.log(
                           "Model selected:",
                           model.id,
@@ -474,7 +471,7 @@ export function AIProviderSelector({
                         );
                         handleModelSelect(model.provider, model.id);
                       }}
-                      className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm"
                     >
                       <div className="flex-shrink-0">
                         {getProviderIcon(model.provider)}
@@ -527,7 +524,7 @@ export function AIProviderSelector({
                             : "opacity-0"
                         )}
                       />
-                    </CommandItem>
+                    </div>
                   ))}
                 </CommandGroup>
               )}
