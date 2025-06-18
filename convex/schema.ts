@@ -47,6 +47,15 @@ export default defineSchema({
         })
       )
     ),
+    reactions: v.optional(
+      v.array(
+        v.object({
+          emoji: v.string(),
+          userId: v.id("users"),
+          timestamp: v.number(),
+        })
+      )
+    ),
   })
     .index("by_conversation", ["conversationId"])
     .index("by_conversation_timestamp", ["conversationId", "timestamp"]),

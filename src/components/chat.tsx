@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useChat } from "@ai-sdk/react";
-import { Send, User, Bot, Settings, Zap } from "lucide-react";
+import { Send, User, Bot, Settings, Zap, Smile, Plus } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
@@ -34,6 +34,7 @@ export function Chat({ chatId }: ChatProps) {
   // Convex hooks
   const createConversation = useMutation(api.conversations.create);
   const addMessage = useMutation(api.messages.add);
+  const addReaction = useMutation(api.messages.addReaction);
 
   // Convert chatId to Convex ID type if it exists as a conversation
   const [conversationId, setConversationId] =
@@ -167,60 +168,58 @@ export function Chat({ chatId }: ChatProps) {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleReaction = async (messageId: string, emoji: string) => {
+    try {
+      await addReaction({ messageId: messageId as any, emoji });
+    } catch (error) {
+      console.error("Failed to add reaction:", error);
+    }
+  };
+
+  const popularEmojis = ["👍", "❤️", "😊", "😮", "😢", "😡"];
+
   return (
-    <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-900">
-      {/* Header */}
-      <header className="flex  items-center border-b justify-between border-neutral-200 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-800">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
-            <Bot className="h-4 w-4" />
-          </div>
-          <h1 className="font-semibold text-neutral-900 dark:text-neutral-100">
-            Ten Chat
-          </h1>
+    <div className="flex h-full flex-col bg-neutral-50 dark:bg-neutral-900">
+      {/* Header - Provider Selection */}
+      <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-3 dark:border-neutral-800 dark:bg-neutral-800">
+        <div className="flex items-center gap-2">
+          <Settings className="h-4 w-4 text-neutral-500" />
+          <select
+            value={selectedProvider}
+            onChange={(e) => {
+              const provider = e.target.value as ProviderType;
+              setSelectedProvider(provider);
+              const newProvider = AI_PROVIDERS.find((p) => p.id === provider);
+              if (newProvider?.models[0]) {
+                setSelectedModel(newProvider.models[0]);
+              }
+            }}
+            className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+          >
+            {AI_PROVIDERS.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+          >
+            {currentProvider?.models.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Provider Selection */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Settings className="h-4 w-4 text-neutral-500" />
-            <select
-              value={selectedProvider}
-              onChange={(e) => {
-                const provider = e.target.value as ProviderType;
-                setSelectedProvider(provider);
-                const newProvider = AI_PROVIDERS.find((p) => p.id === provider);
-                if (newProvider?.models[0]) {
-                  setSelectedModel(newProvider.models[0]);
-                }
-              }}
-              className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
-            >
-              {AI_PROVIDERS.map((provider) => (
-                <option key={provider.id} value={provider.id}>
-                  {provider.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
-            >
-              {currentProvider?.models.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-neutral-500 text-sm ">Demo User</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-300 dark:bg-neutral-600">
-              <User className="h-4 w-4" />
-            </div>
-          </div>
+        <div className="flex items-center gap-2 text-neutral-400 text-sm">
+          <Zap className="h-4 w-4" />
+          <span>
+            {currentProvider?.name} • {selectedModel}
+          </span>
         </div>
       </header>
 
@@ -299,6 +298,94 @@ export function Chat({ chatId }: ChatProps) {
                         ))}
                     </div>
                   )}
+
+                  {/* Display reactions */}
+                  {(() => {
+                    const messageData = messagesData?.find(
+                      (m) => m._id === msg.id
+                    );
+                    const reactions = messageData?.reactions || [];
+
+                    if (
+                      reactions.length === 0 &&
+                      !msg.id?.startsWith("temp-")
+                    ) {
+                      return null;
+                    }
+
+                    // Group reactions by emoji
+                    const reactionGroups = reactions.reduce(
+                      (acc, reaction) => {
+                        if (!acc[reaction.emoji]) {
+                          acc[reaction.emoji] = [];
+                        }
+                        acc[reaction.emoji].push(reaction);
+                        return acc;
+                      },
+                      {} as Record<string, typeof reactions>
+                    );
+
+                    return (
+                      <div className="mt-2 flex items-center gap-1 flex-wrap">
+                        {/* Existing reactions */}
+                        {Object.entries(reactionGroups).map(
+                          ([emoji, reactionList]) => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleReaction(msg.id, emoji)}
+                              className={cn(
+                                "group flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors",
+                                msg.role === "user"
+                                  ? "bg-blue-500/20 text-blue-100 hover:bg-blue-500/30"
+                                  : "bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                              )}
+                            >
+                              <span>{emoji}</span>
+                              <span className="text-xs">
+                                {reactionList.length}
+                              </span>
+                            </button>
+                          )
+                        )}
+
+                        {/* Add reaction button (only for non-temporary messages) */}
+                        {!msg.id?.startsWith("temp-") && (
+                          <div className="group relative">
+                            <button
+                              className={cn(
+                                "opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-full transition-all",
+                                msg.role === "user"
+                                  ? "bg-blue-500/20 text-blue-100 hover:bg-blue-500/30"
+                                  : "bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                              )}
+                              title="Add reaction"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+
+                            {/* Reaction picker (simplified) */}
+                            <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
+                              <div className="flex gap-1 p-2 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700">
+                                {popularEmojis.map((emoji) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReaction(msg.id, emoji);
+                                    }}
+                                    className="w-8 h-8 flex items-center justify-center rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   <div className="mt-1 flex items-center justify-between">
                     <p
                       className={cn(

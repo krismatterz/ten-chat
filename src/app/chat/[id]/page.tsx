@@ -1,11 +1,22 @@
 import { Chat } from "~/components/chat";
+import { Sidebar } from "~/components/sidebar";
 
 interface ChatPageProps {
-  params: Promise<{ id: string }>;
+  params: {
+    id: string;
+  };
 }
 
-export default async function ChatPage({ params }: ChatPageProps) {
-  const { id } = await params;
+export default function ChatPage({ params }: ChatPageProps) {
+  return (
+    <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900">
+      {/* Sidebar */}
+      <Sidebar currentChatId={params.id} />
 
-  return <Chat chatId={id} />;
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <Chat chatId={params.id} />
+      </div>
+    </div>
+  );
 }
