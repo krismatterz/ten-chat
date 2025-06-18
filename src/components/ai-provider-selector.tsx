@@ -78,6 +78,43 @@ const MODEL_CAPABILITIES: Record<string, string[]> = {
   "sonar-reasoning-pro": ["web", "reasoning"],
   "sonar-deep-research": ["web", "docs", "reasoning"],
   "llama-3.3-70b-instruct": ["reasoning"],
+  // OpenRouter model capabilities (with full paths)
+  "openai/gpt-4o": ["vision", "web"],
+  "openai/gpt-4.1-2025-04-14": ["vision", "web", "docs"],
+  "openai/o4-mini-2025-04-16": ["reasoning"],
+  "openai/o4-mini-high-2025-04-16": ["reasoning"],
+  "openai/o3-mini-2025-01-31": ["reasoning"],
+  "openai/o3-2025-04-16": ["reasoning"],
+  "openai/o3-pro-2025-06-10": ["reasoning"],
+  "openai/gpt-4.5-preview-2025-02-27": ["vision", "web", "docs"],
+  "google/gemini-2.5-flash-lite-preview-06-17": ["vision", "web"],
+  "google/gemini-2.5-flash": ["vision", "web", "docs"],
+  "google/gemini-2.5-pro": ["vision", "web", "docs", "reasoning"],
+  "anthropic/claude-3.5-sonnet": ["vision", "web", "docs", "reasoning"],
+  "anthropic/claude-3-7-sonnet-20250219": [
+    "vision",
+    "web",
+    "docs",
+    "reasoning",
+  ],
+  "anthropic/claude-3-7-sonnet-20250219:thinking": [
+    "vision",
+    "web",
+    "docs",
+    "reasoning",
+  ],
+  "anthropic/claude-4-sonnet-20250522": ["vision", "web", "docs", "reasoning"],
+  "anthropic/claude-4-opus-20250522": ["vision", "web", "docs", "reasoning"],
+  "deepseek/deepseek-r1-0528:free": ["reasoning"],
+  "x-ai/grok-3-mini-beta": ["web"],
+  "x-ai/grok-3-beta": ["web", "reasoning"],
+  "qwen/qwen3-14b-04-28:free": ["web"],
+  "qwen/qwen3-235b-a22b-04-28": ["web", "docs"],
+  "perplexity/sonar": ["web"],
+  "perplexity/sonar-pro": ["web", "reasoning"],
+  "perplexity/sonar-reasoning-pro": ["web", "reasoning"],
+  "perplexity/sonar-deep-research": ["web", "docs", "reasoning"],
+  "meta-llama/llama-3.3-70b-instruct": ["reasoning"],
 };
 
 // Model status mapping
@@ -88,6 +125,15 @@ const MODEL_STATUS: Record<string, "new" | "degraded" | "beta"> = {
   "grok-3-mini-beta": "beta",
   "grok-3-beta": "beta",
   "gemini-2.5-flash-lite-preview-06-17": "beta",
+  // OpenRouter model status (with full paths)
+  "anthropic/claude-4-sonnet-20250522": "new",
+  "anthropic/claude-4-opus-20250522": "new",
+  "openai/o3-2025-04-16": "new",
+  "openai/o3-pro-2025-06-10": "new",
+  "x-ai/grok-3-mini-beta": "beta",
+  "x-ai/grok-3-beta": "beta",
+  "google/gemini-2.5-flash-lite-preview-06-17": "beta",
+  "openai/gpt-4.5-preview-2025-02-27": "beta",
 };
 
 interface ModelData {
@@ -274,10 +320,18 @@ export function AIProviderSelector({
   };
 
   const handleModelSelect = (provider: string, model: string) => {
-    console.log("handleModelSelect called with:", provider, model);
-    onProviderChange(provider, model);
-    setOpen(false);
-    setSearchQuery(""); // Clear search when selecting
+    console.log("🔧 handleModelSelect called with:", { provider, model });
+    console.log("🔧 Current selected:", { selectedProvider, selectedModel });
+
+    try {
+      onProviderChange(provider, model);
+      console.log("✅ onProviderChange called successfully");
+      setOpen(false);
+      setSearchQuery(""); // Clear search when selecting
+      console.log("✅ Modal closed and search cleared");
+    } catch (error) {
+      console.error("❌ Error in handleModelSelect:", error);
+    }
   };
 
   const supportsReasoning = (model: string) => {
@@ -339,7 +393,7 @@ export function AIProviderSelector({
                     <CommandItem
                       key={`${model.provider}-${model.id}`}
                       value={`${model.displayName} ${model.providerName}`}
-                      onSelect={(currentValue: string) => {
+                      onSelect={() => {
                         console.log(
                           "Favorite model selected:",
                           model.id,
@@ -412,7 +466,7 @@ export function AIProviderSelector({
                     <CommandItem
                       key={`${model.provider}-${model.id}`}
                       value={`${model.displayName} ${model.providerName}`}
-                      onSelect={(currentValue: string) => {
+                      onSelect={() => {
                         console.log(
                           "Model selected:",
                           model.id,

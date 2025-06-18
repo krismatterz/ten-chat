@@ -11,6 +11,7 @@ import {
   SidebarRail,
 } from "~/components/ui/sidebar";
 import { AppSidebar } from "~/components/app-sidebar";
+import { AuthenticatedLayout } from "~/components/authenticated-layout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,11 +32,7 @@ export default function RootLayout({
         <Providers>
           <UserSync />
           <ChatProvider>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarRail />
-              <SidebarInset>{children}</SidebarInset>
-            </SidebarProvider>
+            <AuthenticatedLayout>{children}</AuthenticatedLayout>
           </ChatProvider>
         </Providers>
       </body>

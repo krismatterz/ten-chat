@@ -291,13 +291,18 @@ export function Chat({ chatId }: ChatProps) {
   };
 
   const handleProviderChange = (provider: string, model: string) => {
+    console.log("🔄 handleProviderChange called with:", { provider, model });
+    console.log("🔄 Previous state:", { selectedProvider, selectedModel });
+
     setSelectedProvider(provider as ProviderType);
     setSelectedModel(model);
+    console.log("🔄 State updated");
 
     // Save to localStorage for persistence
     if (typeof window !== "undefined") {
       localStorage.setItem("tenchat-provider", provider);
       localStorage.setItem("tenchat-model", model);
+      console.log("💾 Saved to localStorage:", { provider, model });
     }
   };
 

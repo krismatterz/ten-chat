@@ -88,7 +88,7 @@ export function AppSidebar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Convex hooks
+  // Convex hooks with error handling
   const conversations = useQuery(api.conversations.list);
   const createConversation = useMutation(api.conversations.create);
   const archiveConversation = useMutation(api.conversations.archive);
@@ -540,6 +540,28 @@ export function AppSidebar() {
       </SidebarGroup>
     );
   };
+
+  // Handle conversations loading state
+  if (conversations === undefined) {
+    return (
+      <Sidebar
+        variant="inset"
+        collapsible="offcanvas"
+        className="bg-sidebar border-sidebar-border modern-gradient"
+      >
+        <SidebarContent>
+          <div className="flex h-full items-center justify-center">
+            <div className="flex items-center space-x-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+              <span className="text-muted-foreground text-sm">
+                Loading conversations...
+              </span>
+            </div>
+          </div>
+        </SidebarContent>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar
