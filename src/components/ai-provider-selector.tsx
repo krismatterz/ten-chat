@@ -241,6 +241,7 @@ export function AIProviderSelector({
                 </div>
                 {filteredModels.favorites.map((model) => (
                   <button
+                    type="button"
                     key={model.id}
                     onClick={() => handleModelSelect(model.provider, model.id)}
                     className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-left"
@@ -277,6 +278,7 @@ export function AIProviderSelector({
                     </div>
 
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(model.id);
@@ -312,6 +314,7 @@ export function AIProviderSelector({
                 </div>
                 {filteredModels.others.map((model) => (
                   <button
+                    type="button"
                     key={model.id}
                     onClick={() => handleModelSelect(model.provider, model.id)}
                     className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-left"
@@ -348,6 +351,7 @@ export function AIProviderSelector({
                     </div>
 
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(model.id);

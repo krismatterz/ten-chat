@@ -58,7 +58,7 @@ const config = {
   ],
 
   // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev, isServer, webpack }) => {
     // Optimize bundle size
     if (!dev && !isServer) {
       config.optimization = {
@@ -67,6 +67,14 @@ const config = {
         sideEffects: false,
       };
     }
+
+    // Ignore test files from pdf-parse package to prevent build errors
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /test\/data\//,
+        contextRegExp: /pdf-parse/,
+      })
+    );
 
     // Add support for importing .node files (for PDF parsing)
     config.resolve.fallback = {
