@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "~/components/providers";
 import { ChatProvider } from "~/components/chat-context";
+import { UserSync } from "~/components/user-sync";
 import {
   SidebarProvider,
   SidebarInset,
@@ -28,6 +29,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <Providers>
+          <UserSync />
           <ChatProvider>
             <SidebarProvider>
               <AppSidebar />

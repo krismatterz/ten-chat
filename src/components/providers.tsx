@@ -1,7 +1,8 @@
 "use client";
 
-import { ClerkProvider } from "@clerk/nextjs";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ClerkProvider, useAuth } from "@clerk/nextjs";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { ConvexReactClient } from "convex/react";
 import { env } from "~/env";
 import { ThemeProvider } from "./theme-provider";
 
@@ -26,7 +27,7 @@ export function Providers({ children }: ProvidersProps) {
         },
       }}
     >
-      <ConvexProvider client={convex}>
+      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -35,7 +36,7 @@ export function Providers({ children }: ProvidersProps) {
         >
           {children}
         </ThemeProvider>
-      </ConvexProvider>
+      </ConvexProviderWithClerk>
     </ClerkProvider>
   );
 }

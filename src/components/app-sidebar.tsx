@@ -22,6 +22,7 @@ import {
   Copy,
   GitBranch,
 } from "lucide-react";
+import { useClerk, useUser } from "@clerk/nextjs";
 
 import {
   Sidebar,
@@ -67,6 +68,8 @@ type Conversation = {
 export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { signOut } = useClerk();
+  const { user } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -355,7 +358,8 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      router.push("/");
+      await signOut();
+      router.push("/sign-in");
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -652,8 +656,20 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton>
-                  <User className="h-4 w-4" />
-                  <span>Demo User</span>
+                  {user?.imageUrl ? (
+                    <img
+                      src={user.imageUrl}
+                      alt={user.fullName || "User"}
+                      className="h-4 w-4 rounded-full"
+                    />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
+                  <span className="truncate">
+                    {user?.fullName ||
+                      user?.emailAddresses?.[0]?.emailAddress ||
+                      "User"}
+                  </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

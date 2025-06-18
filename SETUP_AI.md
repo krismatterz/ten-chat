@@ -85,3 +85,28 @@ CLERK_SECRET_KEY=your_clerk_secret_key_here
 ## **🎊 Stage 2 Complete!**
 
 Your chat app now has **real AI integration** with streaming responses! Add an API key and start chatting with AI! 🚀
+
+## Authentication Setup
+
+### Clerk Configuration
+
+1. In your Clerk Dashboard (https://dashboard.clerk.dev):
+
+   - Go to **User & Authentication** → **Social Connections**
+   - Enable **Google** as the only social provider
+   - Disable all other authentication methods (email/password, phone, etc.)
+   - This ensures users can only sign in with Google
+
+2. Make sure your environment variables are set:
+
+```bash
+CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+```
+
+## Environment Variables
+
+```bash
+CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+```

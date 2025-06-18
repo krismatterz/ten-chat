@@ -77,3 +77,89 @@ export const updateLastActive = mutation({
     });
   },
 });
+
+// Create demo user for development
+export const createDemo = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const existingDemoUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", "demo-user"))
+      .first();
+
+    if (existingDemoUser) {
+      return existingDemoUser;
+    }
+
+    const now = Date.now();
+    const userId = await ctx.db.insert("users", {
+      clerkId: "demo-user",
+      email: "demo@tenchat.dev",
+      name: "Demo User",
+      createdAt: now,
+      lastActiveAt: now,
+    });
+
+    return await ctx.db.get(userId);
+  },
+});
+
+// Remove a user
+export const remove = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    // Get the user to ensure it exists
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Delete all conversations for this user
+    const conversations = await ctx.db
+      .query("conversations")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    for (const conversation of conversations) {
+      // Delete all messages in each conversation
+      const messages = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) =>
+          q.eq("conversationId", conversation._id)
+        )
+        .collect();
+
+      for (const message of messages) {
+        await ctx.db.delete(message._id);
+      }
+
+      // Delete the conversation
+      await ctx.db.delete(conversation._id);
+    }
+
+    // Delete all files for this user
+    const files = await ctx.db
+      .query("files")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    for (const file of files) {
+      await ctx.db.delete(file._id);
+    }
+
+    // Delete user settings
+    const settings = await ctx.db
+      .query("settings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (settings) {
+      await ctx.db.delete(settings._id);
+    }
+
+    // Finally delete the user
+    await ctx.db.delete(userId);
+
+    return { success: true };
+  },
+});
