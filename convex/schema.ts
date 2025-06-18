@@ -22,9 +22,12 @@ export default defineSchema({
     isPinned: v.optional(v.boolean()),
     model: v.optional(v.string()),
     provider: v.optional(v.string()),
+    branchedFrom: v.optional(v.id("conversations")),
+    branchFromMessageId: v.optional(v.id("messages")),
   })
     .index("by_user", ["userId"])
-    .index("by_user_updated", ["userId", "updatedAt"]),
+    .index("by_user_updated", ["userId", "updatedAt"])
+    .index("by_branched_from", ["branchedFrom"]),
 
   messages: defineTable({
     conversationId: v.id("conversations"),

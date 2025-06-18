@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import {
@@ -20,6 +20,8 @@ import {
   Trash2,
   Edit2,
   Copy,
+  Zap,
+  GitBranch,
 } from "lucide-react";
 
 import {
@@ -59,6 +61,8 @@ type Conversation = {
   updatedAt: number;
   isPinned?: boolean;
   isArchived?: boolean;
+  branchedFrom?: Id<"conversations">;
+  branchFromMessageId?: Id<"messages">;
 };
 
 export function AppSidebar() {
@@ -69,6 +73,19 @@ export function AppSidebar() {
   const [editingTitle, setEditingTitle] = useState("");
   const { currentChatId } = useChatContext();
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "O") {
+        e.preventDefault();
+        handleNewChat();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // Convex hooks
   const conversations = useQuery(api.conversations.list);
   const createConversation = useMutation(api.conversations.create);
@@ -76,7 +93,7 @@ export function AppSidebar() {
   const updateConversation = useMutation(api.conversations.update);
   const deleteConversation = useMutation(api.conversations.remove);
 
-  const handleNewChat = async () => {
+  const handleNewChat = useCallback(async () => {
     try {
       const conversationId = await createConversation({
         title: generateChatTitle("New Chat"),
@@ -87,7 +104,7 @@ export function AppSidebar() {
     } catch (error) {
       console.error("Failed to create conversation:", error);
     }
-  };
+  }, [createConversation, router]);
 
   const handleArchive = async (conversationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -136,6 +153,16 @@ export function AppSidebar() {
   const handleStartEdit = (conversation: Conversation) => {
     setEditingId(conversation._id);
     setEditingTitle(conversation.title);
+    // Focus the input after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      const input = document.querySelector(
+        `input[data-editing-id="${conversation._id}"]`
+      ) as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 100);
   };
 
   const handleSaveEdit = async (conversationId: string) => {
@@ -312,6 +339,12 @@ export function AppSidebar() {
                           {conversation.isPinned && (
                             <Pin className="h-3 w-3 text-sidebar-foreground/70 fill-current" />
                           )}
+                          {conversation.branchedFrom && (
+                            <GitBranch
+                              className="h-3 w-3 text-purple-500"
+                              title="Branched conversation"
+                            />
+                          )}
                           <MessageSquare className="h-4 w-4 text-sidebar-foreground/70" />
                         </div>
 
@@ -322,6 +355,7 @@ export function AppSidebar() {
                               value={editingTitle}
                               onChange={(e) => setEditingTitle(e.target.value)}
                               onBlur={() => handleSaveEdit(conversation._id)}
+                              data-editing-id={conversation._id}
                               className="w-full bg-transparent border-none outline-none font-medium text-sidebar-foreground"
                               autoFocus
                             />
@@ -411,8 +445,19 @@ export function AppSidebar() {
       className="bg-sidebar border-sidebar-border modern-gradient"
     >
       <SidebarHeader>
-        {/* Just the New Chat button - removed SidebarTrigger */}
-        <div className="p-2">
+        {/* Logo Section */}
+        <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col">
+              <span className="font-bold text-sidebar-foreground text-sm">
+                Ten Chat
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* New Chat Button */}
+        <div className="p-3">
           <Button
             onClick={handleNewChat}
             className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
@@ -491,11 +536,7 @@ export function AppSidebar() {
 
               {/* Theme Toggle */}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <div className="flex items-center gap-2 w-full">
-                    <ThemeToggle />
-                  </div>
-                </SidebarMenuButton>
+                <ThemeToggle />
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

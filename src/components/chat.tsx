@@ -3,7 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useChat } from "@ai-sdk/react";
-import { Send, User, Bot, Paperclip, Plus, Upload } from "lucide-react";
+import {
+  Send,
+  User,
+  Bot,
+  Paperclip,
+  Plus,
+  Upload,
+  Copy,
+  GitBranch,
+  RotateCcw,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
@@ -24,6 +35,7 @@ interface ChatProps {
 }
 
 export function Chat({ chatId }: ChatProps) {
+  const router = useRouter();
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [selectedProvider, setSelectedProvider] =
     useState<ProviderType>("anthropic");
@@ -41,6 +53,8 @@ export function Chat({ chatId }: ChatProps) {
   const createConversation = useMutation(api.conversations.create);
   const addMessage = useMutation(api.messages.add);
   const addReaction = useMutation(api.messages.addReaction);
+  const autoRename = useMutation(api.conversations.autoRename);
+  const branchConversation = useMutation(api.conversations.branch);
 
   // Convert chatId to Convex ID type if it exists as a conversation
   const [conversationId, setConversationId] =
@@ -195,6 +209,14 @@ export function Chat({ chatId }: ChatProps) {
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
+      // Auto-rename conversation if it's the first meaningful message
+      if (input.trim() && input.trim().length > 3) {
+        await autoRename({
+          conversationId: convId,
+          content: input.trim(),
+        });
+      }
+
       // Clear input and attachments
       setAttachments([]);
       setShowUpload(false);
@@ -235,6 +257,57 @@ export function Chat({ chatId }: ChatProps) {
   const handleProviderChange = (provider: string, model: string) => {
     setSelectedProvider(provider as ProviderType);
     setSelectedModel(model);
+  };
+
+  // Message Actions
+  const handleCopyMessage = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      console.log("Message copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy message:", error);
+    }
+  };
+
+  const handleBranchFromMessage = async (messageId: string) => {
+    if (!conversationId) return;
+
+    try {
+      const branchedId = await branchConversation({
+        originalConversationId: conversationId,
+        fromMessageId: messageId as Id<"messages">,
+      });
+
+      // Navigate to the new branched conversation
+      router.push(`/chat/${branchedId}`);
+    } catch (error) {
+      console.error("Failed to branch conversation:", error);
+    }
+  };
+
+  const handleRetryMessage = async (messageIndex: number) => {
+    if (messageIndex === 0) return; // Can't retry first message
+
+    // Get the user message before this AI message
+    const userMessage = aiMessages[messageIndex - 1];
+    if (!userMessage || userMessage.role !== "user") return;
+
+    // Remove all messages from this point forward
+    const messagesToKeep = aiMessages.slice(0, messageIndex);
+    setAiMessages(messagesToKeep);
+
+    // Retry the AI response
+    // This will trigger the AI to respond again with the same user message
+    const event = new Event("submit", { bubbles: true, cancelable: true });
+    const form = document.querySelector("form");
+    if (form) {
+      // Set the input value to the user's message
+      const textarea = form.querySelector("textarea");
+      if (textarea) {
+        textarea.value = userMessage.content;
+        form.dispatchEvent(event);
+      }
+    }
   };
 
   const popularEmojis = ["👍", "❤️", "😊", "😮", "😢", "😡"];
@@ -278,7 +351,7 @@ export function Chat({ chatId }: ChatProps) {
                 )}
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-lg px-4 py-2",
+                    "max-w-[80%] rounded-lg px-4 py-2 group",
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-card text-card-foreground shadow-sm border"
@@ -326,9 +399,38 @@ export function Chat({ chatId }: ChatProps) {
                       {formatTimestamp(Date.now())}
                     </p>
                     {msg.role === "assistant" && (
-                      <span className="text-muted-foreground text-xs">
-                        {selectedProvider}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs mr-2">
+                          {selectedProvider}
+                        </span>
+
+                        {/* Message Actions */}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleCopyMessage(msg.content)}
+                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                            title="Copy message"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+
+                          <button
+                            onClick={() => handleBranchFromMessage(msg.id)}
+                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                            title="Branch conversation"
+                          >
+                            <GitBranch className="h-3 w-3" />
+                          </button>
+
+                          <button
+                            onClick={() => handleRetryMessage(index)}
+                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                            title="Retry response"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
