@@ -160,16 +160,19 @@ body {
   background: linear-gradient(
     135deg,
     #ffffff 0%,
-    #fefeff 10%,
-    #fdfeff 20%,
-    #fcfdff 30%,
-    #fbfcff 40%,
-    #fafbff 50%,
-    #f9faff 60%,
-    #f8f9ff 70%,
-    #f7f8fe 80%,
-    #f6f7fe 90%,
-    #f5f6fe 100%
+    #fefeff 8%,
+    #fdfeff 16%,
+    #fcfdff 24%,
+    #fbfcff 32%,
+    #fafbff 40%,
+    #f9faff 48%,
+    #f8f9ff 56%,
+    #f7f8fe 64%,
+    #f6f7fe 72%,
+    #f5f6fe 80%,
+    #f4f5fd 88%,
+    #f3f4fd 96%,
+    #f2f3fc 100%
   );
 }
 
@@ -177,16 +180,95 @@ body {
   background: linear-gradient(
     135deg,
     #0a0a0b 0%,
-    #0f0f11 10%,
-    #141416 20%,
-    #171719 30%,
-    #1a1a1c 40%,
-    #1c1c1f 50%,
-    #1f1f22 60%,
-    #212125 70%,
-    #242428 80%,
-    #26262b 90%,
-    #28282e 100%
+    #0f0f11 8%,
+    #141416 16%,
+    #171719 24%,
+    #1a1a1c 32%,
+    #1c1c1f 40%,
+    #1f1f22 48%,
+    #212125 56%,
+    #242428 64%,
+    #26262b 72%,
+    #28282e 80%,
+    #2a2a31 88%,
+    #2c2c34 96%,
+    #2e2e37 100%
+  );
+}
+
+/* Additional beautiful gradients */
+.premium-gradient {
+  background: linear-gradient(
+    135deg,
+    #fefefe 0%,
+    #fdfdfd 25%,
+    #fbfbfc 50%,
+    #f9f9fb 75%,
+    #f7f7fa 100%
+  );
+}
+
+.dark .premium-gradient {
+  background: linear-gradient(
+    135deg,
+    #0f0f0f 0%,
+    #141414 25%,
+    #181818 50%,
+    #1c1c1c 75%,
+    #202020 100%
+  );
+}
+
+/* Decorative gradient orbs */
+.gradient-orb-1 {
+  position: absolute;
+  top: 10%;
+  right: 15%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.03) 0%,
+    rgba(99, 102, 241, 0.01) 50%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dark .gradient-orb-1 {
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.05) 0%,
+    rgba(99, 102, 241, 0.02) 50%,
+    transparent 100%
+  );
+}
+
+.gradient-orb-2 {
+  position: absolute;
+  bottom: 20%;
+  left: 10%;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.02) 0%,
+    rgba(168, 85, 247, 0.01) 50%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dark .gradient-orb-2 {
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.04) 0%,
+    rgba(168, 85, 247, 0.02) 50%,
+    transparent 100%
   );
 }
 

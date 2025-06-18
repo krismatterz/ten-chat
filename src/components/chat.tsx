@@ -54,6 +54,20 @@ export function Chat({ chatId }: ChatProps) {
     conversationId ? { conversationId } : "skip"
   );
 
+  // Handle case where conversation was deleted
+  useEffect(() => {
+    if (conversationId && messagesData === undefined) {
+      // If we're trying to load a specific conversation but get undefined, it might be deleted
+      // Redirect to home after a brief delay
+      const timer = setTimeout(() => {
+        if (window.location.pathname !== "/") {
+          window.location.href = "/";
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [conversationId, messagesData]);
+
   // AI Chat hook for streaming (AI SDK v4 stable)
   const {
     messages: aiMessages,
@@ -226,7 +240,7 @@ export function Chat({ chatId }: ChatProps) {
   const popularEmojis = ["👍", "❤️", "😊", "😮", "😢", "😡"];
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col relative z-10">
       {/* Messages - This will take available space and scroll independently */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="mx-auto max-w-3xl space-y-4">
@@ -351,7 +365,7 @@ export function Chat({ chatId }: ChatProps) {
       </div>
 
       {/* Fixed Input Area at Bottom */}
-      <div className="shrink-0 border-t px-6 py-4 bg-background/95 backdrop-blur-sm">
+      <div className="shrink-0 border-t px-6 py-4 bg-background/95 backdrop-blur-sm dub-gradient">
         <div className="mx-auto max-w-3xl space-y-3">
           {/* File Upload Dropdown */}
           {showUpload && (

@@ -19,6 +19,7 @@ import {
   Download,
   Trash2,
   Edit2,
+  Copy,
 } from "lucide-react";
 
 import {
@@ -102,12 +103,15 @@ export function AppSidebar() {
   const handleDelete = async (conversationId: string) => {
     if (confirm("Are you sure you want to delete this conversation?")) {
       try {
-        await deleteConversation({
-          conversationId: conversationId as Id<"conversations">,
-        });
+        // Always redirect to home first if this is the current chat
         if (currentChatId === conversationId) {
           router.push("/");
         }
+
+        // Then delete the conversation
+        await deleteConversation({
+          conversationId: conversationId as Id<"conversations">,
+        });
       } catch (error) {
         console.error("Failed to delete conversation:", error);
       }
@@ -152,6 +156,17 @@ export function AppSidebar() {
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditingTitle("");
+  };
+
+  const handleCopy = async (conversation: Conversation) => {
+    try {
+      const conversationUrl = `${window.location.origin}/chat/${conversation._id}`;
+      await navigator.clipboard.writeText(conversationUrl);
+      // You could add a toast notification here
+      console.log("Conversation link copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy conversation link:", error);
+    }
   };
 
   const handleExport = async (conversation: Conversation) => {
@@ -352,6 +367,14 @@ export function AppSidebar() {
                     </ContextMenuItem>
 
                     <ContextMenuItem
+                      onClick={() => handleCopy(conversation)}
+                      className="flex items-center gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy Link
+                    </ContextMenuItem>
+
+                    <ContextMenuItem
                       onClick={() => handleExport(conversation)}
                       className="flex items-center gap-2"
                     >
@@ -385,7 +408,7 @@ export function AppSidebar() {
     <Sidebar
       variant="inset"
       collapsible="offcanvas"
-      className="bg-sidebar border-sidebar-border"
+      className="bg-sidebar border-sidebar-border modern-gradient"
     >
       <SidebarHeader>
         {/* Just the New Chat button - removed SidebarTrigger */}
