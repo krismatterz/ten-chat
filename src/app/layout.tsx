@@ -4,7 +4,11 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "~/components/providers";
 import { ChatProvider } from "~/components/chat-context";
-import { SidebarProvider, SidebarInset } from "~/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarRail,
+} from "~/components/ui/sidebar";
 import { AppSidebar } from "~/components/app-sidebar";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -27,6 +31,7 @@ export default function RootLayout({
           <ChatProvider>
             <SidebarProvider>
               <AppSidebar />
+              <SidebarRail />
               <SidebarInset>{children}</SidebarInset>
             </SidebarProvider>
           </ChatProvider>

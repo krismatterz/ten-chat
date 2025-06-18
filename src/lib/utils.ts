@@ -12,18 +12,21 @@ export function formatTimestamp(timestamp: number | string | Date): string {
 
   if (diffInSeconds < 60) {
     return "Just now";
-  } else if (diffInSeconds < 3600) {
+  }
+  if (diffInSeconds < 3600) {
     const minutes = Math.floor(diffInSeconds / 60);
     return `${minutes}m ago`;
-  } else if (diffInSeconds < 86400) {
+  }
+  if (diffInSeconds < 86400) {
     const hours = Math.floor(diffInSeconds / 3600);
     return `${hours}h ago`;
-  } else if (diffInSeconds < 604800) {
+  }
+  if (diffInSeconds < 604800) {
     const days = Math.floor(diffInSeconds / 86400);
     return `${days}d ago`;
-  } else {
-    return date.toLocaleDateString();
   }
+
+  return date.toLocaleDateString();
 }
 
 export function generateChatTitle(defaultTitle?: string): string {

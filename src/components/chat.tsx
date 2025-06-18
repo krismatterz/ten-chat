@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useChat } from "@ai-sdk/react";
-import { Send, User, Bot, Paperclip, Plus } from "lucide-react";
+import { Send, User, Bot, Paperclip, Plus, Upload } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
@@ -36,6 +36,7 @@ export function Chat({ chatId }: ChatProps) {
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Convex hooks
   const createConversation = useMutation(api.conversations.create);
@@ -110,6 +111,35 @@ export function Chat({ chatId }: ChatProps) {
       setAiMessages(formattedMessages);
     }
   }, [messagesData]); // Remove setAiMessages from dependencies to prevent infinite loop
+
+  // Direct file upload handler
+  const handleDirectFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    // Convert FileList to File array and handle upload
+    const fileArray = Array.from(files);
+
+    // For now, create mock FileAttachment objects
+    // In a real implementation, you'd upload these to your storage service
+    const fileAttachments: FileAttachment[] = fileArray.map((file) => ({
+      name: file.name,
+      url: URL.createObjectURL(file), // Temporary URL for preview
+      type: file.type,
+      size: file.size,
+    }));
+
+    setAttachments((prev) => [...prev, ...fileAttachments]);
+
+    // Clear the input
+    event.target.value = "";
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,8 +227,8 @@ export function Chat({ chatId }: ChatProps) {
   const popularEmojis = ["👍", "❤️", "😊", "😮", "😢", "😡"];
 
   return (
-    <div className="flex flex-1 flex-col">
-      {/* Messages */}
+    <div className="flex h-full flex-col">
+      {/* Messages - This will take available space and scroll independently */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="mx-auto max-w-3xl space-y-4">
           {aiMessages.length === 0 ? (
@@ -321,8 +351,8 @@ export function Chat({ chatId }: ChatProps) {
         </div>
       </div>
 
-      {/* Input */}
-      <div className="border-t px-6 py-4 bg-background/50 backdrop-blur-sm">
+      {/* Fixed Input Area at Bottom */}
+      <div className="shrink-0 border-t px-6 py-4 bg-background/95 backdrop-blur-sm">
         <div className="mx-auto max-w-3xl space-y-3">
           {/* File Upload Dropdown */}
           {showUpload && (
@@ -380,15 +410,32 @@ export function Chat({ chatId }: ChatProps) {
               </Button>
             </div>
 
-            {/* AI Provider Selector */}
-            <div className="flex items-center justify-between">
-              <AIProviderSelector
-                selectedProvider={selectedProvider}
-                selectedModel={selectedModel}
-                reasoningLevel={reasoningLevel}
-                onProviderChange={handleProviderChange}
-                onReasoningChange={setReasoningLevel}
-              />
+            {/* Controls Row */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                {/* AI Provider Selector */}
+                <AIProviderSelector
+                  selectedProvider={selectedProvider}
+                  selectedModel={selectedModel}
+                  reasoningLevel={reasoningLevel}
+                  onProviderChange={handleProviderChange}
+                  onReasoningChange={setReasoningLevel}
+                />
+
+                {/* Direct File Upload Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDirectFileUpload}
+                  className="h-8 px-3 gap-2"
+                  disabled={aiIsLoading}
+                >
+                  <Upload className="h-3 w-3" />
+                  <span className="text-xs">Upload</span>
+                </Button>
+              </div>
+
               {attachments.length > 0 && (
                 <span className="text-xs text-muted-foreground">
                   {attachments.length} file{attachments.length > 1 ? "s" : ""}{" "}
@@ -399,6 +446,16 @@ export function Chat({ chatId }: ChatProps) {
           </form>
         </div>
       </div>
+
+      {/* Hidden file input for direct upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileInputChange}
+        multiple
+        accept="image/*,.pdf,.txt,.md,.doc,.docx"
+        className="hidden"
+      />
     </div>
   );
 }

@@ -14,7 +14,11 @@ import {
   Archive,
   User,
   LogOut,
-  Bot,
+  PanelLeftClose,
+  MoreHorizontal,
+  Download,
+  Trash2,
+  Edit2,
 } from "lucide-react";
 
 import {
@@ -38,19 +42,6 @@ import { useChatContext } from "~/components/chat-context";
 import { api } from "../../convex/_generated/api";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
 import type { Id } from "../../convex/_generated/dataModel";
-// Menu items
-const items = [
-  {
-    title: "Chat",
-    url: "/",
-    icon: MessageSquare,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-  },
-];
 
 // Type for conversation data
 type Conversation = {
@@ -66,12 +57,16 @@ export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
   const { currentChatId } = useChatContext();
 
   // Convex hooks
   const conversations = useQuery(api.conversations.list);
   const createConversation = useMutation(api.conversations.create);
   const archiveConversation = useMutation(api.conversations.archive);
+  const updateConversation = useMutation(api.conversations.update);
+  const deleteConversation = useMutation(api.conversations.remove);
 
   const handleNewChat = async () => {
     try {
@@ -95,6 +90,89 @@ export function AppSidebar() {
     } catch (error) {
       console.error("Failed to archive conversation:", error);
     }
+  };
+
+  const handleDelete = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm("Are you sure you want to delete this conversation?")) {
+      try {
+        await deleteConversation({
+          conversationId: conversationId as Id<"conversations">,
+        });
+        if (currentChatId === conversationId) {
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Failed to delete conversation:", error);
+      }
+    }
+  };
+
+  const handlePin = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const conversation = conversations?.find((c) => c._id === conversationId);
+      if (conversation) {
+        await updateConversation({
+          conversationId: conversationId as Id<"conversations">,
+          title: conversation.title,
+          isPinned: !conversation.isPinned,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to pin conversation:", error);
+    }
+  };
+
+  const handleStartEdit = (conversation: Conversation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(conversation._id);
+    setEditingTitle(conversation.title);
+  };
+
+  const handleSaveEdit = async (conversationId: string) => {
+    if (editingTitle.trim()) {
+      try {
+        await updateConversation({
+          conversationId: conversationId as Id<"conversations">,
+          title: editingTitle.trim(),
+        });
+      } catch (error) {
+        console.error("Failed to update conversation:", error);
+      }
+    }
+    setEditingId(null);
+    setEditingTitle("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingTitle("");
+  };
+
+  const handleExport = async (
+    conversation: Conversation,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    // TODO: Implement export functionality
+    // For now, just create a markdown file with basic info
+    const markdownContent = `# ${conversation.title}\n\n**Provider:** ${conversation.provider}\n**Created:** ${new Date(conversation.updatedAt).toLocaleDateString()}\n\n<!-- Messages would be exported here -->\n`;
+
+    const blob = new Blob([markdownContent], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${conversation.title.replace(/[^a-z0-9]/gi, "_")}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDoubleClick = (conversation: Conversation) => {
+    setEditingId(conversation._id);
+    setEditingTitle(conversation.title);
   };
 
   // Filter conversations based on search
@@ -153,13 +231,26 @@ export function AppSidebar() {
   };
 
   const handleConversationClick = (conversationId: string) => {
-    router.push(`/chat/${conversationId}`);
+    if (editingId !== conversationId) {
+      router.push(`/chat/${conversationId}`);
+    }
   };
 
   const handleConversationKeyDown = (
     e: React.KeyboardEvent,
     conversationId: string
   ) => {
+    if (editingId === conversationId) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSaveEdit(conversationId);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        handleCancelEdit();
+      }
+      return;
+    }
+
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       router.push(`/chat/${conversationId}`);
@@ -174,13 +265,13 @@ export function AppSidebar() {
     if (conversations.length === 0) return null;
 
     return (
-      <SidebarGroup>
-        <SidebarGroupLabel className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+      <SidebarGroup className="mb-4">
+        <SidebarGroupLabel className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
           {icon}
           {title}
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu>
+          <SidebarMenu className="space-y-2">
             {conversations.map((conversation) => (
               <SidebarMenuItem key={conversation._id}>
                 <SidebarMenuButton
@@ -192,17 +283,35 @@ export function AppSidebar() {
                     role="button"
                     tabIndex={0}
                     onClick={() => handleConversationClick(conversation._id)}
+                    onDoubleClick={() => handleDoubleClick(conversation)}
                     onKeyDown={(e) =>
                       handleConversationKeyDown(e, conversation._id)
                     }
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-md p-2 text-sm transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-md p-3 text-sm transition-colors hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-sidebar-ring"
                   >
-                    <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="flex items-center gap-2 shrink-0">
+                      {conversation.isPinned && (
+                        <Pin className="h-3 w-3 text-sidebar-foreground/70" />
+                      )}
+                      <MessageSquare className="h-4 w-4 text-sidebar-foreground/70" />
+                    </div>
+
                     <div className="flex-1 overflow-hidden">
-                      <h3 className="truncate font-medium">
-                        {conversation.title}
-                      </h3>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      {editingId === conversation._id ? (
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onBlur={() => handleSaveEdit(conversation._id)}
+                          className="w-full bg-transparent border-none outline-none font-medium text-sidebar-foreground"
+                          autoFocus
+                        />
+                      ) : (
+                        <h3 className="truncate font-medium text-sidebar-foreground">
+                          {conversation.title}
+                        </h3>
+                      )}
+                      <div className="flex items-center gap-1 text-xs text-sidebar-foreground/60">
                         <span className="capitalize">
                           {conversation.provider}
                         </span>
@@ -210,15 +319,54 @@ export function AppSidebar() {
                         <span>{formatTimestamp(conversation.updatedAt)}</span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => handleArchive(conversation._id, e)}
-                      className="opacity-0 group-hover:opacity-100 h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
-                      title="Archive"
-                      aria-label={`Archive conversation ${conversation.title}`}
-                    >
-                      <Archive className="h-3 w-3" />
-                    </button>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => handleStartEdit(conversation, e)}
+                        className="h-6 w-6 flex items-center justify-center rounded text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all"
+                        title="Rename"
+                        aria-label={`Rename conversation ${conversation.title}`}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handlePin(conversation._id, e)}
+                        className="h-6 w-6 flex items-center justify-center rounded text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all"
+                        title={conversation.isPinned ? "Unpin" : "Pin"}
+                        aria-label={`${conversation.isPinned ? "Unpin" : "Pin"} conversation ${conversation.title}`}
+                      >
+                        <Pin
+                          className={cn(
+                            "h-3 w-3",
+                            conversation.isPinned && "fill-current"
+                          )}
+                        />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleExport(conversation, e)}
+                        className="h-6 w-6 flex items-center justify-center rounded text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all"
+                        title="Export as Markdown"
+                        aria-label={`Export conversation ${conversation.title} as Markdown`}
+                      >
+                        <Download className="h-3 w-3" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(conversation._id, e)}
+                        className="h-6 w-6 flex items-center justify-center rounded text-sidebar-foreground/60 hover:text-red-500 hover:bg-sidebar-accent transition-all"
+                        title="Delete"
+                        aria-label={`Delete conversation ${conversation.title}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -230,61 +378,36 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar variant="inset">
+    <Sidebar
+      variant="inset"
+      collapsible="offcanvas"
+      className="bg-sidebar border-sidebar-border"
+    >
       <SidebarHeader>
-        {/* Logo and New Chat */}
-        <div className="flex items-center justify-between p-2">
-          <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Ten Chat</span>
-            <BetaBadge />
-          </div>
+        {/* Just the New Chat button - removed SidebarTrigger */}
+        <div className="p-2">
+          <Button
+            onClick={handleNewChat}
+            className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+            size="sm"
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            <span>New Chat</span>
+          </Button>
         </div>
-
-        <Button onClick={handleNewChat} className="m-2 gap-2">
-          <Plus className="h-4 w-4" />
-          New Chat
-        </Button>
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Navigation */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => {
-                const Icon = item.icon;
-                const isActive =
-                  pathname === item.url ||
-                  (item.url === "/" && pathname.startsWith("/chat"));
-
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <a href={item.url} className="flex items-center gap-2">
-                        <Icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
         {/* Search */}
         <SidebarGroup>
           <SidebarGroupContent>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sidebar-foreground/60" />
               <SidebarInput
                 placeholder="Search your threads..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-sidebar-accent border-sidebar-border"
               />
             </div>
           </SidebarGroupContent>
@@ -292,24 +415,29 @@ export function AppSidebar() {
 
         <SidebarSeparator />
 
-        {/* Conversations organized by time periods */}
-        {renderConversationGroup(
-          groupedConversations.pinned,
-          "Pinned",
-          <Pin className="h-3 w-3" />
-        )}
+        {/* Conversations organized by time periods with proper spacing */}
+        <div className="space-y-4">
+          {renderConversationGroup(
+            groupedConversations.pinned,
+            "Pinned",
+            <Pin className="h-3 w-3" />
+          )}
 
-        {renderConversationGroup(groupedConversations.today, "Today")}
+          {renderConversationGroup(groupedConversations.today, "Today")}
 
-        {renderConversationGroup(groupedConversations.yesterday, "Yesterday")}
+          {renderConversationGroup(groupedConversations.yesterday, "Yesterday")}
 
-        {renderConversationGroup(groupedConversations.lastWeek, "Last 7 Days")}
+          {renderConversationGroup(
+            groupedConversations.lastWeek,
+            "Last 7 Days"
+          )}
+        </div>
 
         {/* Empty state */}
         {filteredConversations.length === 0 && (
           <SidebarGroup>
             <SidebarGroupContent>
-              <div className="flex flex-col items-center justify-center h-32 text-center text-muted-foreground text-sm">
+              <div className="flex flex-col items-center justify-center h-32 text-center text-sidebar-foreground/60 text-sm">
                 <MessageSquare className="h-8 w-8 mb-2" />
                 <p>No conversations yet</p>
                 <p className="text-xs">Start a new chat to begin</p>
@@ -320,12 +448,27 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        {/* Theme toggle */}
+        {/* Settings, Theme toggle, and User section in footer */}
         <SidebarGroup>
           <SidebarGroupContent>
-            <div className="flex items-center justify-center py-2">
-              <ThemeToggle />
-            </div>
+            <SidebarMenu>
+              {/* Settings */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/settings"}>
+                  <a href="/settings" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Theme Toggle */}
+              <SidebarMenuItem>
+                <div className="flex items-center justify-between px-2 py-2">
+                  <ThemeToggle />
+                </div>
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
