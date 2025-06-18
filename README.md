@@ -241,6 +241,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
+- [Theo](https://x.com/theo) for the Cloneathon opportunity
 - [Vercel AI SDK](https://sdk.vercel.ai/) for AI integration patterns
 - [Convex](https://convex.dev/) for real-time backend
 - [Clerk](https://clerk.com/) for authentication
@@ -255,4 +256,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Built with ❤️ using modern web technologies
+Built with ❤️ by Krisusing modern web technologies

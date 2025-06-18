@@ -121,6 +121,8 @@ export function Chat({ chatId }: ChatProps) {
       provider: selectedProvider,
       model: selectedModel,
       reasoning: reasoningLevel,
+      // Include current attachments in the request body
+      attachments: attachments.length > 0 ? attachments : undefined,
     },
     onFinish: async (message) => {
       // Save AI response to Convex
@@ -219,7 +221,11 @@ export function Chat({ chatId }: ChatProps) {
       const userMessage = {
         id: `temp-${Date.now()}`, // Temporary ID
         role: "user" as const,
-        content: input || (attachments.length > 0 ? "Shared files" : ""),
+        content:
+          input ||
+          (attachments.length > 0
+            ? "I've shared some files with you. Please analyze them."
+            : ""),
         attachments: attachments.length > 0 ? attachments : undefined,
       };
 
@@ -230,7 +236,11 @@ export function Chat({ chatId }: ChatProps) {
       await addMessage({
         conversationId: convId,
         role: "user",
-        content: input || (attachments.length > 0 ? "Shared files" : ""),
+        content:
+          input ||
+          (attachments.length > 0
+            ? "I've shared some files with you. Please analyze them."
+            : ""),
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
@@ -242,15 +252,15 @@ export function Chat({ chatId }: ChatProps) {
         });
       }
 
-      // Clear input and attachments
+      // For AI SDK, we need to trigger the chat
+      // The attachments will be included via the body.attachments parameter
+      if (input.trim() || attachments.length > 0) {
+        await aiHandleSubmit(e);
+      }
+
+      // Clear input and attachments only after successful submission
       setAttachments([]);
       setShowUpload(false);
-
-      // For AI SDK, we need to trigger the chat with the current messages
-      // Since we're using attachments, we'll trigger a manual API call
-      if (input.trim() || attachments.length > 0) {
-        aiHandleSubmit(e);
-      }
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -302,9 +312,31 @@ export function Chat({ chatId }: ChatProps) {
   const handleCopyMessage = async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
+      // Show a temporary success indicator
+      const button = document.activeElement as HTMLButtonElement;
+      if (button) {
+        const originalTitle = button.title;
+        button.title = "✅ Copied!";
+        button.style.color = "#10b981"; // green-500
+        setTimeout(() => {
+          button.title = originalTitle;
+          button.style.color = "";
+        }, 2000);
+      }
       console.log("Message copied to clipboard");
     } catch (error) {
       console.error("Failed to copy message:", error);
+      // Show error indicator
+      const button = document.activeElement as HTMLButtonElement;
+      if (button) {
+        const originalTitle = button.title;
+        button.title = "❌ Failed to copy";
+        button.style.color = "#ef4444"; // red-500
+        setTimeout(() => {
+          button.title = originalTitle;
+          button.style.color = "";
+        }, 2000);
+      }
     }
   };
 
@@ -317,10 +349,33 @@ export function Chat({ chatId }: ChatProps) {
         fromMessageId: messageId as Id<"messages">,
       });
 
+      // Show success notification before navigating
+      const notification = document.createElement("div");
+      notification.textContent = "🌿 Conversation branched successfully!";
+      notification.style.cssText =
+        "position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 8px 16px; border-radius: 8px; z-index: 9999; font-size: 14px;";
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
+
       // Navigate to the new branched conversation
       router.push(`/chat/${branchedId}`);
     } catch (error) {
       console.error("Failed to branch conversation:", error);
+      // Show error notification
+      const notification = document.createElement("div");
+      notification.textContent = "❌ Failed to branch conversation";
+      notification.style.cssText =
+        "position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 8px 16px; border-radius: 8px; z-index: 9999; font-size: 14px;";
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
     }
   };
 
@@ -331,21 +386,35 @@ export function Chat({ chatId }: ChatProps) {
     const userMessage = aiMessages[messageIndex - 1];
     if (!userMessage || userMessage.role !== "user") return;
 
-    // Remove all messages from this point forward
+    // Remove all messages from this point forward (including the AI message we're retrying)
     const messagesToKeep = aiMessages.slice(0, messageIndex);
     setAiMessages(messagesToKeep);
 
-    // Retry the AI response
-    // This will trigger the AI to respond again with the same user message
-    const event = new Event("submit", { bubbles: true, cancelable: true });
-    const form = document.querySelector("form");
-    if (form) {
-      // Set the input value to the user's message
-      const textarea = form.querySelector("textarea");
-      if (textarea) {
-        textarea.value = userMessage.content;
-        form.dispatchEvent(event);
-      }
+    // Use AI SDK's reload method to regenerate the last response
+    try {
+      // Temporarily store the original input
+      const originalInput = input;
+
+      // Set the input to the user's message content to retry with same prompt
+      handleInputChange({ target: { value: userMessage.content } } as any);
+
+      // Create a proper form submission event
+      const syntheticEvent = {
+        preventDefault: () => {},
+        type: "submit",
+      } as React.FormEvent;
+
+      // Submit the form which will trigger the AI response
+      await aiHandleSubmit(syntheticEvent);
+
+      // Clear the input after submission
+      setTimeout(() => {
+        handleInputChange({ target: { value: originalInput } } as any);
+      }, 100);
+    } catch (error) {
+      console.error("Failed to retry message:", error);
+      // Restore the original messages if retry failed
+      setAiMessages(aiMessages);
     }
   };
 
@@ -446,25 +515,35 @@ export function Chat({ chatId }: ChatProps) {
                         {/* Message Actions */}
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => handleCopyMessage(msg.content)}
-                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyMessage(msg.content);
+                            }}
+                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
                             title="Copy message"
                           >
                             <Copy className="h-3 w-3" />
                           </button>
 
                           <button
-                            onClick={() => handleBranchFromMessage(msg.id)}
-                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                            title="Branch conversation"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBranchFromMessage(msg.id);
+                            }}
+                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+                            title="Branch conversation from this message"
                           >
                             <GitBranch className="h-3 w-3" />
                           </button>
 
                           <button
-                            onClick={() => handleRetryMessage(index)}
-                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                            title="Retry response"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRetryMessage(index);
+                            }}
+                            className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+                            title="Retry this response"
+                            disabled={aiIsLoading}
                           >
                             <RotateCcw className="h-3 w-3" />
                           </button>

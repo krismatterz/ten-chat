@@ -149,7 +149,14 @@ export function AppSidebar() {
     }
   };
 
-  const handleStartEdit = (conversation: Conversation) => {
+  const handleStartEdit = (
+    conversation: Conversation,
+    e?: React.MouseEvent
+  ) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     setEditingId(conversation._id);
     setEditingTitle(conversation.title);
     // Focus the input after a brief delay to ensure it's rendered
@@ -161,7 +168,7 @@ export function AppSidebar() {
         input.focus();
         input.select();
       }
-    }, 100);
+    }, 50);
   };
 
   const handleSaveEdit = async (conversationId: string) => {
@@ -188,27 +195,110 @@ export function AppSidebar() {
     try {
       const conversationUrl = `${window.location.origin}/chat/${conversation._id}`;
       await navigator.clipboard.writeText(conversationUrl);
-      // You could add a toast notification here
       console.log("Conversation link copied to clipboard");
+      // Simple success feedback - could be enhanced with a proper toast system
+      const notification = document.createElement("div");
+      notification.textContent = "✅ Link copied to clipboard!";
+      notification.style.cssText =
+        "position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 8px 16px; border-radius: 8px; z-index: 9999; font-size: 14px;";
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 3000);
     } catch (error) {
       console.error("Failed to copy conversation link:", error);
+      // Simple error feedback
+      const notification = document.createElement("div");
+      notification.textContent = "❌ Failed to copy link";
+      notification.style.cssText =
+        "position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 8px 16px; border-radius: 8px; z-index: 9999; font-size: 14px;";
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 3000);
     }
   };
 
   const handleExport = async (conversation: Conversation) => {
-    // TODO: Implement export functionality
-    // For now, just create a markdown file with basic info
-    const markdownContent = `# ${conversation.title}\n\n**Provider:** ${conversation.provider}\n**Created:** ${new Date(conversation.updatedAt).toLocaleDateString()}\n\n<!-- Messages would be exported here -->\n`;
+    try {
+      // Fetch messages for this conversation
+      const messages = await fetch(
+        `/api/conversations/${conversation._id}/messages`
+      ).catch(() => null);
 
-    const blob = new Blob([markdownContent], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${conversation.title.replace(/[^a-z0-9]/gi, "_")}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      let markdownContent = `# ${conversation.title}\n\n`;
+      markdownContent += `**Provider:** ${conversation.provider || "Unknown"}\n`;
+      markdownContent += `**Created:** ${new Date(conversation.updatedAt).toLocaleDateString()}\n`;
+      markdownContent += `**Exported:** ${new Date().toLocaleDateString()}\n\n`;
+
+      if (conversation.branchedFrom) {
+        markdownContent += `**Branched from:** ${conversation.branchedFrom}\n\n`;
+      }
+
+      markdownContent += `---\n\n`;
+
+      if (messages && messages.ok) {
+        const messageData = await messages.json();
+        if (messageData && messageData.length > 0) {
+          markdownContent += `## Conversation Messages\n\n`;
+
+          messageData.forEach((msg: any, index: number) => {
+            const timestamp = new Date(msg.timestamp).toLocaleString();
+            const role = msg.role === "user" ? "👤 User" : "🤖 Assistant";
+
+            markdownContent += `### ${role} - ${timestamp}\n\n`;
+            markdownContent += `${msg.content}\n\n`;
+
+            if (msg.attachments && msg.attachments.length > 0) {
+              markdownContent += `**Attachments:**\n`;
+              msg.attachments.forEach((attachment: any) => {
+                markdownContent += `- [${attachment.name}](${attachment.url})\n`;
+              });
+              markdownContent += `\n`;
+            }
+
+            markdownContent += `---\n\n`;
+          });
+        } else {
+          markdownContent += `## No messages found\n\n`;
+        }
+      } else {
+        markdownContent += `## Messages\n\n*Unable to load messages for export*\n\n`;
+      }
+
+      markdownContent += `\n\n*Exported from Ten Chat on ${new Date().toLocaleString()}*\n`;
+
+      const blob = new Blob([markdownContent], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${conversation.title.replace(/[^a-z0-9]/gi, "_")}_${new Date().toISOString().split("T")[0]}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Show success notification
+      const notification = document.createElement("div");
+      notification.textContent = "📄 Conversation exported successfully!";
+      notification.style.cssText =
+        "position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 8px 16px; border-radius: 8px; z-index: 9999; font-size: 14px;";
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 3000);
+    } catch (error) {
+      console.error("Failed to export conversation:", error);
+      // Show error notification
+      const notification = document.createElement("div");
+      notification.textContent = "❌ Failed to export conversation";
+      notification.style.cssText =
+        "position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 8px 16px; border-radius: 8px; z-index: 9999; font-size: 14px;";
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 3000);
+    }
   };
 
   const handleDoubleClick = (conversation: Conversation) => {
@@ -349,7 +439,26 @@ export function AppSidebar() {
                               type="text"
                               value={editingTitle}
                               onChange={(e) => setEditingTitle(e.target.value)}
-                              onBlur={() => handleSaveEdit(conversation._id)}
+                              onBlur={(e) => {
+                                // Add a small delay to prevent conflicts with other events
+                                setTimeout(() => {
+                                  // Only save if we're still in editing mode and not clicking another element
+                                  if (editingId === conversation._id) {
+                                    handleSaveEdit(conversation._id);
+                                  }
+                                }, 150);
+                              }}
+                              onKeyDown={(e) => {
+                                e.stopPropagation();
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleSaveEdit(conversation._id);
+                                } else if (e.key === "Escape") {
+                                  e.preventDefault();
+                                  handleCancelEdit();
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
                               data-editing-id={conversation._id}
                               className="w-full bg-transparent border-none outline-none font-medium text-sidebar-foreground"
                             />
@@ -370,7 +479,7 @@ export function AppSidebar() {
 
                   <ContextMenuContent className="w-48">
                     <ContextMenuItem
-                      onClick={() => handleStartEdit(conversation)}
+                      onClick={(e) => handleStartEdit(conversation, e)}
                       className="flex items-center gap-2"
                     >
                       <Edit2 className="h-4 w-4" />

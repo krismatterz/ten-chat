@@ -114,7 +114,12 @@ async function processMessageContent(message: any) {
 
 export async function POST(req: Request) {
   try {
-    const { messages, provider = "anthropic", model } = await req.json();
+    const {
+      messages,
+      provider = "anthropic",
+      model,
+      attachments,
+    } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response("Invalid messages format", { status: 400 });
@@ -180,10 +185,18 @@ export async function POST(req: Request) {
 
     // Process messages with attachments for multimodal content
     const processedMessages = await Promise.all(
-      messages.map(async (msg: any) => ({
-        role: msg.role,
-        content: await processMessageContent(msg),
-      }))
+      messages.map(async (msg: any) => {
+        // If this is the latest user message and we have current attachments, use them
+        const isLatestUserMessage =
+          msg.role === "user" && messages.indexOf(msg) === messages.length - 1;
+        const messageWithAttachments =
+          isLatestUserMessage && attachments ? { ...msg, attachments } : msg;
+
+        return {
+          role: msg.role,
+          content: await processMessageContent(messageWithAttachments),
+        };
+      })
     );
 
     // Create the streaming response using AI SDK v4
