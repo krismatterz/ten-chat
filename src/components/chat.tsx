@@ -8,6 +8,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
 import { FileUpload } from "./file-upload";
+import { AI_PROVIDERS, type ProviderType } from "~/lib/providers";
 
 interface FileAttachment {
   name: string;
@@ -22,9 +23,8 @@ interface ChatProps {
 
 export function Chat({ chatId }: ChatProps) {
   const [isFirstMessage, setIsFirstMessage] = useState(true);
-  const [selectedProvider, setSelectedProvider] = useState<
-    "anthropic" | "openai" | "groq"
-  >("anthropic");
+  const [selectedProvider, setSelectedProvider] =
+    useState<ProviderType>("anthropic");
   const [selectedModel, setSelectedModel] = useState<string>(
     "claude-3-5-sonnet-20241022"
   );
@@ -71,6 +71,10 @@ export function Chat({ chatId }: ChatProps) {
         });
       }
     },
+    onError: (error) => {
+      console.error("Chat error:", error);
+    },
+    keepLastMessageOnError: true,
   });
 
   // Auto-scroll to bottom when new messages arrive
@@ -127,29 +131,7 @@ export function Chat({ chatId }: ChatProps) {
     }
   };
 
-  const providers = [
-    {
-      id: "anthropic" as const,
-      name: "Anthropic",
-      models: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"],
-    },
-    {
-      id: "openai" as const,
-      name: "OpenAI",
-      models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
-    },
-    {
-      id: "groq" as const,
-      name: "Groq",
-      models: [
-        "llama-3.1-8b-instant",
-        "llama-3.1-70b-versatile",
-        "mixtral-8x7b-32768",
-      ],
-    },
-  ];
-
-  const currentProvider = providers.find((p) => p.id === selectedProvider);
+  const currentProvider = AI_PROVIDERS.find((p) => p.id === selectedProvider);
 
   const handleFilesUploaded = (files: FileAttachment[]) => {
     setAttachments((prev) => [...prev, ...files]);
@@ -179,19 +161,16 @@ export function Chat({ chatId }: ChatProps) {
             <select
               value={selectedProvider}
               onChange={(e) => {
-                const provider = e.target.value as
-                  | "anthropic"
-                  | "openai"
-                  | "groq";
+                const provider = e.target.value as ProviderType;
                 setSelectedProvider(provider);
-                const newProvider = providers.find((p) => p.id === provider);
+                const newProvider = AI_PROVIDERS.find((p) => p.id === provider);
                 if (newProvider?.models[0]) {
                   setSelectedModel(newProvider.models[0]);
                 }
               }}
               className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
             >
-              {providers.map((provider) => (
+              {AI_PROVIDERS.map((provider) => (
                 <option key={provider.id} value={provider.id}>
                   {provider.name}
                 </option>
