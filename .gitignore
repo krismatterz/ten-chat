@@ -56,3 +56,4 @@ bun-debug.log
 
 # idea files
 .idea
+bun.lock

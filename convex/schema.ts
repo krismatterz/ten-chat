@@ -37,6 +37,16 @@ export default defineSchema({
     tokens: v.optional(v.number()),
     model: v.optional(v.string()),
     provider: v.optional(v.string()),
+    attachments: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          url: v.string(),
+          type: v.string(),
+          size: v.number(),
+        })
+      )
+    ),
   })
     .index("by_conversation", ["conversationId"])
     .index("by_conversation_timestamp", ["conversationId", "timestamp"]),

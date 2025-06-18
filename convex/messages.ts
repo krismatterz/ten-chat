@@ -15,10 +15,20 @@ export const add = mutation({
     model: v.optional(v.string()),
     provider: v.optional(v.string()),
     tokens: v.optional(v.number()),
+    attachments: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          url: v.string(),
+          type: v.string(),
+          size: v.number(),
+        })
+      )
+    ),
   },
   handler: async (
     ctx,
-    { conversationId, role, content, model, provider, tokens }
+    { conversationId, role, content, model, provider, tokens, attachments }
   ) => {
     const user = await requireUser(ctx);
 
@@ -39,6 +49,7 @@ export const add = mutation({
       model,
       provider,
       tokens,
+      attachments,
     });
 
     // Update conversation's updatedAt timestamp

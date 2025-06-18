@@ -7,6 +7,14 @@ import { Send, User, Bot, Settings, Zap } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
+import { FileUpload } from "./file-upload";
+
+interface FileAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
 
 interface ChatProps {
   chatId: string;
@@ -20,6 +28,7 @@ export function Chat({ chatId }: ChatProps) {
   const [selectedModel, setSelectedModel] = useState<string>(
     "claude-3-5-sonnet-20241022"
   );
+  const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Convex hooks
@@ -67,7 +76,7 @@ export function Chat({ chatId }: ChatProps) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messagesData, aiMessages]);
+  }, []);
 
   // Sync Convex messages with AI messages
   useEffect(() => {
@@ -83,14 +92,14 @@ export function Chat({ chatId }: ChatProps) {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() && attachments.length === 0) return;
 
     try {
       let convId = conversationId;
 
       // Create conversation if it doesn't exist
       if (!convId) {
-        const title = generateChatTitle(input);
+        const title = generateChatTitle(input || "File upload");
         convId = await createConversation({
           title,
           model: selectedModel,
@@ -100,12 +109,16 @@ export function Chat({ chatId }: ChatProps) {
         setIsFirstMessage(false);
       }
 
-      // Save user message to Convex
+      // Save user message to Convex with attachments
       await addMessage({
         conversationId: convId,
         role: "user",
-        content: input,
+        content: input || (attachments.length > 0 ? "Shared files" : ""),
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
+
+      // Clear attachments after sending
+      setAttachments([]);
 
       // Send to AI
       aiHandleSubmit(e);
@@ -137,6 +150,14 @@ export function Chat({ chatId }: ChatProps) {
   ];
 
   const currentProvider = providers.find((p) => p.id === selectedProvider);
+
+  const handleFilesUploaded = (files: FileAttachment[]) => {
+    setAttachments((prev) => [...prev, ...files]);
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-900">
@@ -243,6 +264,35 @@ export function Chat({ chatId }: ChatProps) {
                   )}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
+
+                  {/* Display attachments if they exist */}
+                  {messagesData?.find((m) => m._id === msg.id)?.attachments && (
+                    <div className="mt-2 space-y-1">
+                      {messagesData
+                        .find((m) => m._id === msg.id)
+                        ?.attachments?.map((attachment) => (
+                          <div
+                            key={attachment.url}
+                            className={cn(
+                              "flex items-center gap-2 text-xs rounded p-2",
+                              msg.role === "user"
+                                ? "bg-blue-500/20 text-blue-100"
+                                : "bg-neutral-100 dark:bg-neutral-700"
+                            )}
+                          >
+                            <span>📎</span>
+                            <a
+                              href={attachment.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="truncate hover:underline"
+                            >
+                              {attachment.name}
+                            </a>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                   <div className="mt-1 flex items-center justify-between">
                     <p
                       className={cn(
@@ -295,7 +345,15 @@ export function Chat({ chatId }: ChatProps) {
 
       {/* Input */}
       <div className="border-t px-6 py-4 border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-800">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-3xl space-y-3">
+          {/* File Upload */}
+          <FileUpload
+            onFilesUploaded={handleFilesUploaded}
+            attachments={attachments}
+            onRemoveAttachment={handleRemoveAttachment}
+            disabled={aiIsLoading}
+          />
+
           <form onSubmit={handleSendMessage} className="flex gap-3">
             <div className="relative flex-1">
               <textarea
@@ -314,7 +372,9 @@ export function Chat({ chatId }: ChatProps) {
               />
               <button
                 type="submit"
-                disabled={!input.trim() || aiIsLoading}
+                disabled={
+                  (!input.trim() && attachments.length === 0) || aiIsLoading
+                }
                 className="flex absolute bottom-2 right-2 h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:bg-neutral-400"
               >
                 <Send className="h-4 w-4" />
