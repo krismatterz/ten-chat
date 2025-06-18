@@ -1,16 +1,16 @@
+"use client";
+
 import { Settings } from "../../components/settings";
-import { Sidebar } from "~/components/sidebar";
+import { SidebarTrigger } from "~/components/ui/sidebar";
 
 export default function SettingsPage() {
   return (
-    <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900">
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Settings Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Settings />
+    <div className="flex h-screen flex-col">
+      <div className="flex items-center gap-2 p-4 border-b">
+        <SidebarTrigger />
+        <h1 className="font-semibold">Settings</h1>
       </div>
+      <Settings />
     </div>
   );
 }

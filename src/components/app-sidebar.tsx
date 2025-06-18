@@ -37,7 +37,7 @@ import { ThemeToggle } from "~/components/ui/theme-toggle";
 import { useChatContext } from "~/components/chat-context";
 import { api } from "../../convex/_generated/api";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
-
+import type { Id } from "../../convex/_generated/dataModel";
 // Menu items
 const items = [
   {
@@ -51,6 +51,16 @@ const items = [
     icon: Settings,
   },
 ];
+
+// Type for conversation data
+type Conversation = {
+  _id: Id<"conversations">;
+  title: string;
+  provider?: string;
+  updatedAt: number;
+  isPinned?: boolean;
+  isArchived?: boolean;
+};
 
 export function AppSidebar() {
   const router = useRouter();
@@ -79,7 +89,9 @@ export function AppSidebar() {
   const handleArchive = async (conversationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await archiveConversation({ conversationId: conversationId as any });
+      await archiveConversation({
+        conversationId: conversationId as Id<"conversations">,
+      });
     } catch (error) {
       console.error("Failed to archive conversation:", error);
     }
@@ -140,8 +152,22 @@ export function AppSidebar() {
     }
   };
 
+  const handleConversationClick = (conversationId: string) => {
+    router.push(`/chat/${conversationId}`);
+  };
+
+  const handleConversationKeyDown = (
+    e: React.KeyboardEvent,
+    conversationId: string
+  ) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      router.push(`/chat/${conversationId}`);
+    }
+  };
+
   const renderConversationGroup = (
-    conversations: any[],
+    conversations: Conversation[],
     title: string,
     icon?: React.ReactNode
   ) => {
@@ -163,8 +189,13 @@ export function AppSidebar() {
                   className="group relative"
                 >
                   <div
-                    onClick={() => router.push(`/chat/${conversation._id}`)}
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-md p-2 text-sm transition-colors hover:bg-accent"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleConversationClick(conversation._id)}
+                    onKeyDown={(e) =>
+                      handleConversationKeyDown(e, conversation._id)
+                    }
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-md p-2 text-sm transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="flex-1 overflow-hidden">
@@ -180,9 +211,11 @@ export function AppSidebar() {
                       </div>
                     </div>
                     <button
+                      type="button"
                       onClick={(e) => handleArchive(conversation._id, e)}
                       className="opacity-0 group-hover:opacity-100 h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
                       title="Archive"
+                      aria-label={`Archive conversation ${conversation.title}`}
                     >
                       <Archive className="h-3 w-3" />
                     </button>
