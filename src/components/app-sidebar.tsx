@@ -35,6 +35,13 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "~/components/ui/sidebar";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "~/components/ui/context-menu";
 import { Button } from "~/components/ui/button";
 import { BetaBadge } from "~/components/ui/beta-badge";
 import { ThemeToggle } from "~/components/ui/theme-toggle";
@@ -72,7 +79,7 @@ export function AppSidebar() {
     try {
       const conversationId = await createConversation({
         title: generateChatTitle("New Chat"),
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-3.5-sonnet",
         provider: "anthropic",
       });
       router.push(`/chat/${conversationId}`);
@@ -92,8 +99,7 @@ export function AppSidebar() {
     }
   };
 
-  const handleDelete = async (conversationId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDelete = async (conversationId: string) => {
     if (confirm("Are you sure you want to delete this conversation?")) {
       try {
         await deleteConversation({
@@ -108,8 +114,7 @@ export function AppSidebar() {
     }
   };
 
-  const handlePin = async (conversationId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handlePin = async (conversationId: string) => {
     try {
       const conversation = conversations?.find((c) => c._id === conversationId);
       if (conversation) {
@@ -124,8 +129,7 @@ export function AppSidebar() {
     }
   };
 
-  const handleStartEdit = (conversation: Conversation, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleStartEdit = (conversation: Conversation) => {
     setEditingId(conversation._id);
     setEditingTitle(conversation.title);
   };
@@ -150,11 +154,7 @@ export function AppSidebar() {
     setEditingTitle("");
   };
 
-  const handleExport = async (
-    conversation: Conversation,
-    e: React.MouseEvent
-  ) => {
-    e.stopPropagation();
+  const handleExport = async (conversation: Conversation) => {
     // TODO: Implement export functionality
     // For now, just create a markdown file with basic info
     const markdownContent = `# ${conversation.title}\n\n**Provider:** ${conversation.provider}\n**Created:** ${new Date(conversation.updatedAt).toLocaleDateString()}\n\n<!-- Messages would be exported here -->\n`;
@@ -265,110 +265,114 @@ export function AppSidebar() {
     if (conversations.length === 0) return null;
 
     return (
-      <SidebarGroup className="mb-4">
-        <SidebarGroupLabel className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
+      <SidebarGroup className="mb-6">
+        <SidebarGroupLabel className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-3">
           {icon}
           {title}
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu className="space-y-2">
+          <SidebarMenu className="space-y-3">
             {conversations.map((conversation) => (
               <SidebarMenuItem key={conversation._id}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={currentChatId === conversation._id}
-                  className="group relative"
-                >
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleConversationClick(conversation._id)}
-                    onDoubleClick={() => handleDoubleClick(conversation)}
-                    onKeyDown={(e) =>
-                      handleConversationKeyDown(e, conversation._id)
-                    }
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-md p-3 text-sm transition-colors hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-sidebar-ring"
-                  >
-                    <div className="flex items-center gap-2 shrink-0">
-                      {conversation.isPinned && (
-                        <Pin className="h-3 w-3 text-sidebar-foreground/70" />
-                      )}
-                      <MessageSquare className="h-4 w-4 text-sidebar-foreground/70" />
-                    </div>
-
-                    <div className="flex-1 overflow-hidden">
-                      {editingId === conversation._id ? (
-                        <input
-                          type="text"
-                          value={editingTitle}
-                          onChange={(e) => setEditingTitle(e.target.value)}
-                          onBlur={() => handleSaveEdit(conversation._id)}
-                          className="w-full bg-transparent border-none outline-none font-medium text-sidebar-foreground"
-                          autoFocus
-                        />
-                      ) : (
-                        <h3 className="truncate font-medium text-sidebar-foreground">
-                          {conversation.title}
-                        </h3>
-                      )}
-                      <div className="flex items-center gap-1 text-xs text-sidebar-foreground/60">
-                        <span className="capitalize">
-                          {conversation.provider}
-                        </span>
-                        <span>•</span>
-                        <span>{formatTimestamp(conversation.updatedAt)}</span>
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={(e) => handleStartEdit(conversation, e)}
-                        className="h-6 w-6 flex items-center justify-center rounded text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all"
-                        title="Rename"
-                        aria-label={`Rename conversation ${conversation.title}`}
+                <ContextMenu>
+                  <ContextMenuTrigger asChild>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={currentChatId === conversation._id}
+                      className="group relative h-auto"
+                    >
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() =>
+                          handleConversationClick(conversation._id)
+                        }
+                        onDoubleClick={() => handleDoubleClick(conversation)}
+                        onKeyDown={(e) =>
+                          handleConversationKeyDown(e, conversation._id)
+                        }
+                        className="flex w-full cursor-pointer items-center gap-3 rounded-md p-3 text-sm transition-colors hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-sidebar-ring min-h-[60px]"
                       >
-                        <Edit2 className="h-3 w-3" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => handlePin(conversation._id, e)}
-                        className="h-6 w-6 flex items-center justify-center rounded text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all"
-                        title={conversation.isPinned ? "Unpin" : "Pin"}
-                        aria-label={`${conversation.isPinned ? "Unpin" : "Pin"} conversation ${conversation.title}`}
-                      >
-                        <Pin
-                          className={cn(
-                            "h-3 w-3",
-                            conversation.isPinned && "fill-current"
+                        <div className="flex items-center gap-2 shrink-0">
+                          {conversation.isPinned && (
+                            <Pin className="h-3 w-3 text-sidebar-foreground/70 fill-current" />
                           )}
-                        />
-                      </button>
+                          <MessageSquare className="h-4 w-4 text-sidebar-foreground/70" />
+                        </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleExport(conversation, e)}
-                        className="h-6 w-6 flex items-center justify-center rounded text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all"
-                        title="Export as Markdown"
-                        aria-label={`Export conversation ${conversation.title} as Markdown`}
-                      >
-                        <Download className="h-3 w-3" />
-                      </button>
+                        <div className="flex-1 overflow-hidden">
+                          {editingId === conversation._id ? (
+                            <input
+                              type="text"
+                              value={editingTitle}
+                              onChange={(e) => setEditingTitle(e.target.value)}
+                              onBlur={() => handleSaveEdit(conversation._id)}
+                              className="w-full bg-transparent border-none outline-none font-medium text-sidebar-foreground"
+                              autoFocus
+                            />
+                          ) : (
+                            <h3 className="truncate font-medium text-sidebar-foreground leading-tight">
+                              {conversation.title}
+                            </h3>
+                          )}
+                          <div className="flex items-center gap-1 text-xs text-sidebar-foreground/60 mt-1">
+                            <span className="capitalize">
+                              {conversation.provider}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {formatTimestamp(conversation.updatedAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </SidebarMenuButton>
+                  </ContextMenuTrigger>
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleDelete(conversation._id, e)}
-                        className="h-6 w-6 flex items-center justify-center rounded text-sidebar-foreground/60 hover:text-red-500 hover:bg-sidebar-accent transition-all"
-                        title="Delete"
-                        aria-label={`Delete conversation ${conversation.title}`}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                </SidebarMenuButton>
+                  <ContextMenuContent className="w-48">
+                    <ContextMenuItem
+                      onClick={() => handleStartEdit(conversation)}
+                      className="flex items-center gap-2"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                      Rename
+                    </ContextMenuItem>
+
+                    <ContextMenuItem
+                      onClick={() => handlePin(conversation._id)}
+                      className="flex items-center gap-2"
+                    >
+                      <Pin
+                        className={cn(
+                          "h-4 w-4",
+                          conversation.isPinned && "fill-current"
+                        )}
+                      />
+                      {conversation.isPinned ? "Unpin" : "Pin"}
+                    </ContextMenuItem>
+
+                    <ContextMenuItem
+                      onClick={() => handleExport(conversation)}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export
+                      <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
+                        BETA
+                      </span>
+                    </ContextMenuItem>
+
+                    <ContextMenuSeparator />
+
+                    <ContextMenuItem
+                      onClick={() => handleDelete(conversation._id)}
+                      className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -416,7 +420,7 @@ export function AppSidebar() {
         <SidebarSeparator />
 
         {/* Conversations organized by time periods with proper spacing */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {renderConversationGroup(
             groupedConversations.pinned,
             "Pinned",
@@ -448,7 +452,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        {/* Settings, Theme toggle, and User section in footer */}
+        {/* Settings and Theme toggle */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -464,9 +468,11 @@ export function AppSidebar() {
 
               {/* Theme Toggle */}
               <SidebarMenuItem>
-                <div className="flex items-center justify-between px-2 py-2">
-                  <ThemeToggle />
-                </div>
+                <SidebarMenuButton asChild>
+                  <div className="flex items-center gap-2 w-full">
+                    <ThemeToggle />
+                  </div>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

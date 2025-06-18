@@ -27,9 +27,8 @@ export function Chat({ chatId }: ChatProps) {
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [selectedProvider, setSelectedProvider] =
     useState<ProviderType>("anthropic");
-  const [selectedModel, setSelectedModel] = useState<string>(
-    "claude-3-5-sonnet-20241022"
-  );
+  const [selectedModel, setSelectedModel] =
+    useState<string>("claude-3.5-sonnet");
   const [reasoningLevel, setReasoningLevel] = useState<"low" | "mid" | "high">(
     "mid"
   );
@@ -386,18 +385,6 @@ export function Chat({ chatId }: ChatProps) {
                 />
               </div>
 
-              {/* Attach Button */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowUpload(!showUpload)}
-                className="px-4 h-auto py-3 gap-2"
-                disabled={aiIsLoading}
-              >
-                <Paperclip className="h-4 w-4" />
-                <span className="text-sm">Attach</span>
-              </Button>
-
               {/* Send Button */}
               <Button
                 type="submit"
@@ -422,17 +409,17 @@ export function Chat({ chatId }: ChatProps) {
                   onReasoningChange={setReasoningLevel}
                 />
 
-                {/* Direct File Upload Button */}
+                {/* Direct File Upload Button - Now rounded and named "Attach" */}
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={handleDirectFileUpload}
-                  className="h-8 px-3 gap-2"
+                  className="h-8 w-8 rounded-full p-0"
                   disabled={aiIsLoading}
+                  title="Attach files"
                 >
-                  <Upload className="h-3 w-3" />
-                  <span className="text-xs">Upload</span>
+                  <Paperclip className="h-4 w-4" />
                 </Button>
               </div>
 
