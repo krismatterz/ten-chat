@@ -3,11 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useChat } from "@ai-sdk/react";
-import { Send, User, Bot, Settings, Zap, Smile, Plus } from "lucide-react";
+import { Send, User, Bot, Paperclip, Plus } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
 import { FileUpload } from "./file-upload";
+import { AIProviderSelector } from "./ai-provider-selector";
+import { Button } from "./ui/button";
 import { AI_PROVIDERS, type ProviderType } from "~/lib/providers";
 
 interface FileAttachment {
@@ -29,6 +31,7 @@ export function Chat({ chatId }: ChatProps) {
     "claude-3-5-sonnet-20241022"
   );
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
+  const [showUpload, setShowUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Convex hooks
@@ -142,6 +145,7 @@ export function Chat({ chatId }: ChatProps) {
 
       // Clear input and attachments
       setAttachments([]);
+      setShowUpload(false);
 
       // For AI SDK, we need to trigger the chat with the current messages
       // Since we're using attachments, we'll trigger a manual API call
@@ -176,69 +180,30 @@ export function Chat({ chatId }: ChatProps) {
     }
   };
 
+  const handleProviderChange = (provider: string, model: string) => {
+    setSelectedProvider(provider as ProviderType);
+    setSelectedModel(model);
+  };
+
   const popularEmojis = ["👍", "❤️", "😊", "😮", "😢", "😡"];
 
   return (
-    <div className="flex h-full flex-col bg-neutral-50 dark:bg-neutral-900">
-      {/* Header - Provider Selection */}
-      <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-3 dark:border-neutral-800 dark:bg-neutral-800">
-        <div className="flex items-center gap-2">
-          <Settings className="h-4 w-4 text-neutral-500" />
-          <select
-            value={selectedProvider}
-            onChange={(e) => {
-              const provider = e.target.value as ProviderType;
-              setSelectedProvider(provider);
-              const newProvider = AI_PROVIDERS.find((p) => p.id === provider);
-              if (newProvider?.models[0]) {
-                setSelectedModel(newProvider.models[0]);
-              }
-            }}
-            className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
-          >
-            {AI_PROVIDERS.map((provider) => (
-              <option key={provider.id} value={provider.id}>
-                {provider.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
-          >
-            {currentProvider?.models.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2 text-neutral-400 text-sm">
-          <Zap className="h-4 w-4" />
-          <span>
-            {currentProvider?.name} • {selectedModel}
-          </span>
-        </div>
-      </header>
-
+    <div className="flex h-full flex-col bg-background">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="mx-auto max-w-3xl space-y-4">
           {aiMessages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
-                <Bot className="mx-auto h-12 w-12 text-neutral-400" />
-                <h3 className="mt-4 font-semibold text-neutral-900 dark:text-neutral-100">
+                <Bot className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 font-semibold text-foreground">
                   Start a conversation
                 </h3>
-                <p className="mt-2 text-neutral-500">
+                <p className="mt-2 text-muted-foreground">
                   Type a message below to begin chatting with{" "}
                   {currentProvider?.name} AI.
                 </p>
-                <div className="mt-4 flex items-center justify-center gap-2 text-neutral-400 text-sm">
-                  <Zap className="h-4 w-4" />
+                <div className="mt-4 flex items-center justify-center gap-2 text-muted-foreground text-sm">
                   <span>
                     Powered by {currentProvider?.name} • {selectedModel}
                   </span>
@@ -255,7 +220,7 @@ export function Chat({ chatId }: ChatProps) {
                 )}
               >
                 {msg.role === "assistant" && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Bot className="h-4 w-4" />
                   </div>
                 )}
@@ -263,8 +228,8 @@ export function Chat({ chatId }: ChatProps) {
                   className={cn(
                     "max-w-[80%] rounded-lg px-4 py-2",
                     msg.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-neutral-100"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card text-card-foreground shadow-sm border"
                   )}
                 >
                   {/* Render message content (AI SDK v4) */}
@@ -280,9 +245,7 @@ export function Chat({ chatId }: ChatProps) {
                             key={attachment.url}
                             className={cn(
                               "flex items-center gap-2 text-xs rounded p-2",
-                              msg.role === "user"
-                                ? "bg-blue-500/20 text-blue-100"
-                                : "bg-neutral-100 dark:bg-neutral-700"
+                              msg.role === "user" ? "bg-primary/20" : "bg-muted"
                             )}
                           >
                             <span>📎</span>
@@ -336,8 +299,8 @@ export function Chat({ chatId }: ChatProps) {
                               className={cn(
                                 "group flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors",
                                 msg.role === "user"
-                                  ? "bg-blue-500/20 text-blue-100 hover:bg-blue-500/30"
-                                  : "bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                                  ? "bg-primary/20 hover:bg-primary/30"
+                                  : "bg-muted hover:bg-muted/80"
                               )}
                             >
                               <span>{emoji}</span>
@@ -355,8 +318,8 @@ export function Chat({ chatId }: ChatProps) {
                               className={cn(
                                 "opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-full transition-all",
                                 msg.role === "user"
-                                  ? "bg-blue-500/20 text-blue-100 hover:bg-blue-500/30"
-                                  : "bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                                  ? "bg-primary/20 hover:bg-primary/30"
+                                  : "bg-muted hover:bg-muted/80"
                               )}
                               title="Add reaction"
                             >
@@ -365,7 +328,7 @@ export function Chat({ chatId }: ChatProps) {
 
                             {/* Reaction picker (simplified) */}
                             <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
-                              <div className="flex gap-1 p-2 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700">
+                              <div className="flex gap-1 p-2 bg-card rounded-lg shadow-lg border">
                                 {popularEmojis.map((emoji) => (
                                   <button
                                     key={emoji}
@@ -373,7 +336,7 @@ export function Chat({ chatId }: ChatProps) {
                                       e.stopPropagation();
                                       handleReaction(msg.id, emoji);
                                     }}
-                                    className="w-8 h-8 flex items-center justify-center rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                                    className="w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors"
                                   >
                                     {emoji}
                                   </button>
@@ -391,21 +354,21 @@ export function Chat({ chatId }: ChatProps) {
                       className={cn(
                         "text-xs",
                         msg.role === "user"
-                          ? "text-blue-100"
-                          : "text-neutral-500"
+                          ? "text-primary-foreground/70"
+                          : "text-muted-foreground"
                       )}
                     >
                       {formatTimestamp(Date.now())}
                     </p>
                     {msg.role === "assistant" && (
-                      <span className="text-neutral-400 text-xs">
+                      <span className="text-muted-foreground text-xs">
                         {selectedProvider}
                       </span>
                     )}
                   </div>
                 </div>
                 {msg.role === "user" && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-300 dark:bg-neutral-600">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
                     <User className="h-4 w-4" />
                   </div>
                 )}
@@ -416,16 +379,16 @@ export function Chat({ chatId }: ChatProps) {
           {/* Loading indicator */}
           {aiIsLoading && (
             <div className="flex justify-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Bot className="h-4 w-4" />
               </div>
-              <div className="max-w-[80%] rounded-lg bg-white px-4 py-2 text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-neutral-100">
+              <div className="max-w-[80%] rounded-lg bg-card px-4 py-2 text-card-foreground shadow-sm border">
                 <div className="flex items-center gap-2">
                   <div className="animate-pulse">Thinking...</div>
                   <div className="flex gap-1">
-                    <div className="h-1 w-1 animate-bounce rounded-full bg-neutral-400 [animation-delay:-0.3s]" />
-                    <div className="h-1 w-1 animate-bounce rounded-full bg-neutral-400 [animation-delay:-0.15s]" />
-                    <div className="h-1 w-1 animate-bounce rounded-full bg-neutral-400" />
+                    <div className="h-1 w-1 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
+                    <div className="h-1 w-1 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
+                    <div className="h-1 w-1 animate-bounce rounded-full bg-muted-foreground" />
                   </div>
                 </div>
               </div>
@@ -437,41 +400,77 @@ export function Chat({ chatId }: ChatProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t px-6 py-4 border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-800">
+      <div className="border-t px-6 py-4 bg-background/50 backdrop-blur-sm">
         <div className="mx-auto max-w-3xl space-y-3">
-          {/* File Upload */}
-          <FileUpload
-            onFilesUploaded={handleFilesUploaded}
-            attachments={attachments}
-            onRemoveAttachment={handleRemoveAttachment}
-            disabled={aiIsLoading}
-          />
-
-          <form onSubmit={handleSendMessage} className="flex gap-3">
-            <div className="relative flex-1">
-              <textarea
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(e);
-                  }
-                }}
-                placeholder={`Ask ${currentProvider?.name} anything...`}
-                className="w-full resize-none rounded-lg border border-neutral-300 bg-white px-4 py-3 pr-12 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
-                rows={1}
+          {/* File Upload Dropdown */}
+          {showUpload && (
+            <div className="border rounded-lg p-4 bg-card">
+              <FileUpload
+                onFilesUploaded={handleFilesUploaded}
+                attachments={attachments}
+                onRemoveAttachment={handleRemoveAttachment}
                 disabled={aiIsLoading}
               />
-              <button
+            </div>
+          )}
+
+          {/* Input Area */}
+          <form onSubmit={handleSendMessage} className="space-y-3">
+            <div className="relative flex gap-2">
+              <div className="flex-1 relative">
+                <textarea
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage(e);
+                    }
+                  }}
+                  placeholder={`Ask ${currentProvider?.name} ${selectedModel.split("-").slice(-1)[0] || selectedModel} anything...`}
+                  className="w-full resize-none rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                  rows={1}
+                  disabled={aiIsLoading}
+                />
+              </div>
+
+              {/* Attach Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowUpload(!showUpload)}
+                className="px-4 h-auto py-3 gap-2"
+                disabled={aiIsLoading}
+              >
+                <Paperclip className="h-4 w-4" />
+                <span className="text-sm">Attach</span>
+              </Button>
+
+              {/* Send Button */}
+              <Button
                 type="submit"
                 disabled={
                   (!input.trim() && attachments.length === 0) || aiIsLoading
                 }
-                className="flex absolute bottom-2 right-2 h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:bg-neutral-400"
+                className="px-4 h-auto py-3"
               >
                 <Send className="h-4 w-4" />
-              </button>
+              </Button>
+            </div>
+
+            {/* AI Provider Selector */}
+            <div className="flex items-center justify-between">
+              <AIProviderSelector
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                onProviderChange={handleProviderChange}
+              />
+              {attachments.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {attachments.length} file{attachments.length > 1 ? "s" : ""}{" "}
+                  attached
+                </span>
+              )}
             </div>
           </form>
         </div>

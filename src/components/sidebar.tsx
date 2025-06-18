@@ -35,6 +35,7 @@ import {
   FileText,
 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
+import { ThemeToggle } from "./ui/theme-toggle";
 
 // Navigation items are static and memoized outside component
 const sidebarItems = [
@@ -193,28 +194,32 @@ export function Sidebar({ currentChatId }: SidebarProps) {
                 isCollapsed ? "justify-center" : ""
               )}
             >
-              <AnimatePresence initial={false}>
-                {!isCollapsed && (
+              {isCollapsed ? (
+                <MessageSquare className="h-5 w-5 text-primary" />
+              ) : (
+                <>
+                  <AnimatePresence initial={false}>
+                    <motion.div
+                      className="flex items-center overflow-hidden"
+                      initial={false}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <span className="whitespace-nowrap font-semibold">
+                        Ten Chat
+                      </span>
+                    </motion.div>
+                  </AnimatePresence>
                   <motion.div
-                    className="flex items-center overflow-hidden"
-                    initial={false}
-                    animate={{ width: "auto", opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
+                    layout
                     transition={{ duration: 0.3 }}
+                    className="ml-2"
                   >
-                    <span className="whitespace-nowrap font-semibold">
-                      Ten Chat
-                    </span>
+                    <BetaBadge />
                   </motion.div>
-                )}
-              </AnimatePresence>
-              <motion.div
-                layout
-                transition={{ duration: 0.3 }}
-                className={cn(isCollapsed ? "" : "ml-2")}
-              >
-                <BetaBadge />
-              </motion.div>
+                </>
+              )}
             </div>
           </div>
 
@@ -478,6 +483,11 @@ export function Sidebar({ currentChatId }: SidebarProps) {
           {/* Bottom utilities section */}
           <div className="mt-auto border-t">
             <div className="flex flex-col gap-1 p-4">
+              {/* Theme toggle */}
+              <div className="pb-2 border-b">
+                <ThemeToggle collapsed={isCollapsed} />
+              </div>
+
               {/* User profile section */}
               <div className="flex flex-col gap-1">
                 <Button
