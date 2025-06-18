@@ -3,7 +3,7 @@ import { Chat } from "~/components/chat";
 
 export default function HomePage() {
   return (
-    <div className="flex h-screen gradient-modern-light dark:gradient-modern-dark">
+    <div className="flex h-screen modern-gradient">
       {/* Sidebar */}
       <Sidebar />
 

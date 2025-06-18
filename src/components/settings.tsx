@@ -74,7 +74,7 @@ export function Settings() {
   ];
 
   return (
-    <div className="flex h-full gradient-dub-light dark:gradient-dub-dark">
+    <div className="flex h-full dub-gradient">
       {/* Settings Sidebar */}
       <div className="w-64 bg-card/50 backdrop-blur-sm border-r">
         <div className="p-6 border-b">

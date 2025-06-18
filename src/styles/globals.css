@@ -60,50 +60,8 @@ body {
   color: hsl(var(--foreground));
 }
 
-/* Custom gradient classes inspired by Dub.co and Dia */
-.gradient-dub-light {
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    #fefefe 25%,
-    #fafafa 50%,
-    #f5f5f5 100%
-  );
-}
-
-.gradient-dub-dark {
-  background: linear-gradient(
-    180deg,
-    #171717 0%,
-    #1a1a1a 25%,
-    #1e1e1e 50%,
-    #262626 100%
-  );
-}
-
-.gradient-dia-light {
-  background: linear-gradient(
-    135deg,
-    #ffffff 0%,
-    #fffef9 25%,
-    #fefcf0 50%,
-    #fdf7e7 75%,
-    #fbf1dc 100%
-  );
-}
-
-.gradient-dia-dark {
-  background: linear-gradient(
-    135deg,
-    #171717 0%,
-    #1a1918 25%,
-    #1e1d1b 50%,
-    #23211e 75%,
-    #282521 100%
-  );
-}
-
-.gradient-modern-light {
+/* Modern gradients that properly work with dark mode */
+.modern-gradient {
   background: linear-gradient(
     135deg,
     #ffffff 0%,
@@ -115,7 +73,7 @@ body {
   );
 }
 
-.gradient-modern-dark {
+.dark .modern-gradient {
   background: linear-gradient(
     135deg,
     #171717 0%,
@@ -124,5 +82,47 @@ body {
     #1c1c1e 60%,
     #1e1e21 80%,
     #202024 100%
+  );
+}
+
+.dub-gradient {
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #fefefe 25%,
+    #fafafa 50%,
+    #f5f5f5 100%
+  );
+}
+
+.dark .dub-gradient {
+  background: linear-gradient(
+    180deg,
+    #171717 0%,
+    #1a1a1a 25%,
+    #1e1e1e 50%,
+    #262626 100%
+  );
+}
+
+.dia-gradient {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #fffef9 25%,
+    #fefcf0 50%,
+    #fdf7e7 75%,
+    #fbf1dc 100%
+  );
+}
+
+.dark .dia-gradient {
+  background: linear-gradient(
+    135deg,
+    #171717 0%,
+    #1a1918 25%,
+    #1e1d1b 50%,
+    #23211e 75%,
+    #282521 100%
   );
 }
