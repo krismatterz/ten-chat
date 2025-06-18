@@ -1,7 +1,7 @@
 "use client";
 
-import { ClerkProvider, useAuth } from "@clerk/nextjs";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { ClerkProvider } from "@clerk/nextjs";
+import { ConvexProvider } from "convex/react";
 import { ConvexReactClient } from "convex/react";
 import { env } from "~/env";
 
@@ -14,9 +14,7 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <ClerkProvider publishableKey={env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
-      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        {children}
-      </ConvexProviderWithClerk>
+      <ConvexProvider client={convex}>{children}</ConvexProvider>
     </ClerkProvider>
   );
 }

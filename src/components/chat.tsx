@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useUser } from "@clerk/nextjs";
-import { Send, Plus, User, Bot } from "lucide-react";
+import { Send, User, Bot } from "lucide-react";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
 
 interface ChatProps {
@@ -13,7 +12,6 @@ interface ChatProps {
 }
 
 export function Chat({ chatId }: ChatProps) {
-  const { user } = useUser();
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -21,7 +19,6 @@ export function Chat({ chatId }: ChatProps) {
   // Convex hooks
   const createConversation = useMutation(api.conversations.create);
   const addMessage = useMutation(api.messages.add);
-  const upsertUser = useMutation(api.users.upsert);
 
   // Convert chatId to Convex ID type if it exists as a conversation
   const [conversationId, setConversationId] =
@@ -33,25 +30,13 @@ export function Chat({ chatId }: ChatProps) {
     conversationId ? { conversationId } : "skip"
   );
 
-  // Initialize user in Convex when component mounts
-  useEffect(() => {
-    if (user) {
-      upsertUser({
-        clerkId: user.id,
-        email: user.emailAddresses[0]?.emailAddress ?? "",
-        name: user.fullName ?? undefined,
-        avatar: user.imageUrl ?? undefined,
-      });
-    }
-  }, [user, upsertUser]);
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messagesData]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !user || isLoading) return;
+    if (!message.trim() || isLoading) return;
 
     setIsLoading(true);
     try {
@@ -81,9 +66,10 @@ export function Chat({ chatId }: ChatProps) {
       // For now, add a simple bot response
       setTimeout(async () => {
         await addMessage({
-          conversationId: convId!,
+          conversationId: convId,
           role: "assistant",
-          content: "I'm a placeholder response. AI integration coming soon!",
+          content:
+            "I'm a placeholder response. AI integration coming soon in Stage 2! 🤖",
           model: "gpt-3.5-turbo",
           provider: "openai",
         });
@@ -102,14 +88,6 @@ export function Chat({ chatId }: ChatProps) {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-neutral-500">Loading...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-900">
       {/* Header */}
@@ -123,14 +101,10 @@ export function Chat({ chatId }: ChatProps) {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-500">{user.fullName}</span>
-          {user.imageUrl && (
-            <img
-              src={user.imageUrl}
-              alt={user.fullName ?? "User"}
-              className="h-8 w-8 rounded-full"
-            />
-          )}
+          <span className="text-sm text-neutral-500">Demo User</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-300 dark:bg-neutral-600">
+            <User className="h-4 w-4" />
+          </div>
         </div>
       </header>
 
@@ -211,6 +185,7 @@ export function Chat({ chatId }: ChatProps) {
                 onClick={handleSendMessage}
                 disabled={!message.trim() || isLoading}
                 className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:bg-neutral-400"
+                type="button"
               >
                 <Send className="h-4 w-4" />
               </button>
