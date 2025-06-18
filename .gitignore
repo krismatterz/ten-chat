@@ -61,3 +61,5 @@ bun.lock
 
 # Temporary test files for pdf-parse build fix
 test/
+pnpm-lock.yaml
+pnpm-workspace.yaml
