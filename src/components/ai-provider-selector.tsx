@@ -147,11 +147,11 @@ export function AIProviderSelector({
   const allModels = useMemo((): ModelData[] => {
     return AI_PROVIDERS.flatMap((provider) =>
       provider.models.map(
-        (model): ModelData => ({
-          id: model,
+        (model, index): ModelData => ({
+          id: model || `unknown-${provider.id}-${index}`, // Ensure unique ID
           provider: provider.id,
           providerName: provider.name,
-          displayName: getModelDisplayName(model),
+          displayName: getModelDisplayName(model || `Unknown Model ${index}`),
           capabilities: MODEL_CAPABILITIES[model] || [],
           status: MODEL_STATUS[model],
           isFavorited: favorites.includes(model),
@@ -180,12 +180,34 @@ export function AIProviderSelector({
     setSearch("");
   };
 
+  const handleKeyDown = (
+    event: React.KeyboardEvent,
+    provider: string,
+    model: string
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleModelSelect(provider, model);
+    }
+  };
+
   const toggleFavorite = (modelId: string) => {
     setFavorites((prev) =>
       prev.includes(modelId)
         ? prev.filter((id) => id !== modelId)
         : [...prev, modelId]
     );
+  };
+
+  const handleFavoriteKeyDown = (
+    event: React.KeyboardEvent,
+    modelId: string
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFavorite(modelId);
+    }
   };
 
   const supportsReasoning = (model: string) => {
@@ -239,12 +261,14 @@ export function AIProviderSelector({
                 <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b">
                   ⭐ Favorites
                 </div>
-                {filteredModels.favorites.map((model) => (
-                  <button
-                    type="button"
-                    key={model.id}
+                {filteredModels.favorites.map((model, modelIndex) => (
+                  <div
+                    key={`favorite-${model.id}-${modelIndex}`}
                     onClick={() => handleModelSelect(model.provider, model.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-left"
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, model.provider, model.id)
+                    }
+                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-left cursor-pointer"
                   >
                     {getProviderIcon(model.provider)}
                     <span className="flex-1 font-medium text-sm">
@@ -266,9 +290,9 @@ export function AIProviderSelector({
 
                     {/* Capabilities */}
                     <div className="flex items-center gap-1">
-                      {model.capabilities.map((capability) => (
+                      {model.capabilities.map((capability, capIndex) => (
                         <div
-                          key={capability}
+                          key={`fav-${model.id}-${capability}-${capIndex}`}
                           className="w-4 h-4 rounded bg-muted flex items-center justify-center"
                           title={capability}
                         >
@@ -279,11 +303,14 @@ export function AIProviderSelector({
 
                     <button
                       type="button"
-                      onClick={(e) => {
+                      onMouseDown={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         toggleFavorite(model.id);
                       }}
-                      className="p-1 hover:bg-muted rounded"
+                      onKeyDown={(e) => handleFavoriteKeyDown(e, model.id)}
+                      className="p-1 hover:bg-muted rounded cursor-pointer"
+                      aria-label={`${model.isFavorited ? "Remove from" : "Add to"} favorites`}
                     >
                       <Heart
                         className={cn(
@@ -301,7 +328,7 @@ export function AIProviderSelector({
                         selectedModel === model.id ? "opacity-100" : "opacity-0"
                       )}
                     />
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -312,12 +339,14 @@ export function AIProviderSelector({
                 <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b">
                   🤖 All Models
                 </div>
-                {filteredModels.others.map((model) => (
-                  <button
-                    type="button"
-                    key={model.id}
+                {filteredModels.others.map((model, modelIndex) => (
+                  <div
+                    key={`other-${model.id}-${modelIndex}`}
                     onClick={() => handleModelSelect(model.provider, model.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-left"
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, model.provider, model.id)
+                    }
+                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-accent text-left cursor-pointer"
                   >
                     {getProviderIcon(model.provider)}
                     <span className="flex-1 font-medium text-sm">
@@ -339,9 +368,9 @@ export function AIProviderSelector({
 
                     {/* Capabilities */}
                     <div className="flex items-center gap-1">
-                      {model.capabilities.map((capability) => (
+                      {model.capabilities.map((capability, capIndex) => (
                         <div
-                          key={capability}
+                          key={`other-${model.id}-${capability}-${capIndex}`}
                           className="w-4 h-4 rounded bg-muted flex items-center justify-center"
                           title={capability}
                         >
@@ -352,11 +381,14 @@ export function AIProviderSelector({
 
                     <button
                       type="button"
-                      onClick={(e) => {
+                      onMouseDown={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         toggleFavorite(model.id);
                       }}
-                      className="p-1 hover:bg-muted rounded"
+                      onKeyDown={(e) => handleFavoriteKeyDown(e, model.id)}
+                      className="p-1 hover:bg-muted rounded cursor-pointer"
+                      aria-label={`${model.isFavorited ? "Remove from" : "Add to"} favorites`}
                     >
                       <Heart
                         className={cn(
@@ -374,7 +406,7 @@ export function AIProviderSelector({
                         selectedModel === model.id ? "opacity-100" : "opacity-0"
                       )}
                     />
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
