@@ -54,7 +54,7 @@ export function Chat({ chatId }: ChatProps) {
     status,
     setMessages: setAiMessages,
   } = useChat({
-    api: "/api/chat",
+    experimental_throttle: 100,
     body: {
       provider: selectedProvider,
       model: selectedModel,
@@ -62,12 +62,8 @@ export function Chat({ chatId }: ChatProps) {
     onFinish: async (message) => {
       // Save AI response to Convex
       if (conversationId) {
-        // Extract text content from message parts
-        const textContent =
-          message.parts
-            ?.filter((part) => part.type === "text")
-            .map((part) => part.text)
-            .join("") || "";
+        // Extract text content from message
+        const textContent = message.content || "";
 
         await addMessage({
           conversationId,
@@ -98,10 +94,7 @@ export function Chat({ chatId }: ChatProps) {
         id: msg._id,
         role: msg.role as "user" | "assistant",
         content: msg.content,
-        // Include parts structure for v5 alpha compatibility
-        parts: msg.content
-          ? [{ type: "text" as const, text: msg.content }]
-          : undefined,
+        parts: [{ type: "text" as const, text: msg.content }],
       }));
       setAiMessages(formattedMessages);
     }
@@ -255,38 +248,8 @@ export function Chat({ chatId }: ChatProps) {
                       : "bg-white text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-neutral-100"
                   )}
                 >
-                  {/* Render message parts (v5 alpha structure) */}
-                  <div className="whitespace-pre-wrap">
-                    {msg.parts?.map((part, partIndex) => {
-                      switch (part.type) {
-                        case "text":
-                          return <span key={partIndex}>{part.text}</span>;
-                        case "tool-invocation":
-                          return (
-                            <div
-                              key={partIndex}
-                              className="my-2 p-2 bg-neutral-100 dark:bg-neutral-700 rounded text-sm"
-                            >
-                              <span className="font-medium">
-                                🔧 {part.toolInvocation.toolName}
-                              </span>
-                              {part.toolInvocation.state === "result" && (
-                                <div className="mt-1 text-xs opacity-75">
-                                  Result:{" "}
-                                  {JSON.stringify(part.toolInvocation.result)}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        default:
-                          return (
-                            <span key={partIndex} className="opacity-50">
-                              [{part.type}]
-                            </span>
-                          );
-                      }
-                    })}
-                  </div>
+                  {/* Render message content */}
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
 
                   {/* Display attachments if they exist */}
                   {messagesData?.find((m) => m._id === msg.id)?.attachments && (

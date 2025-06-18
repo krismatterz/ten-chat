@@ -43,11 +43,8 @@ export async function POST(req: Request) {
     }
 
     // Select provider and model
-    let aiProvider:
-      | ReturnType<typeof anthropic>
-      | ReturnType<typeof openai>
-      | ReturnType<typeof createOpenAI>;
     let selectedModel: string;
+    let aiModel: any;
 
     switch (provider) {
       case "anthropic":
@@ -56,22 +53,22 @@ export async function POST(req: Request) {
             status: 500,
           });
         }
-        aiProvider = anthropic;
         selectedModel = model || "claude-3-5-sonnet-20241022";
+        aiModel = anthropic(selectedModel);
         break;
       case "openai":
         if (!env.OPENAI_API_KEY) {
           return new Response("OpenAI API key not configured", { status: 500 });
         }
-        aiProvider = openai;
         selectedModel = model || "gpt-4o-mini";
+        aiModel = openai(selectedModel);
         break;
       case "groq":
         if (!env.GROQ_API_KEY) {
           return new Response("Groq API key not configured", { status: 500 });
         }
-        aiProvider = groq;
         selectedModel = model || "llama-3.1-8b-instant";
+        aiModel = groq(selectedModel);
         break;
       case "openrouter":
         if (!env.OPENROUTER_API_KEY) {
@@ -79,8 +76,8 @@ export async function POST(req: Request) {
             status: 500,
           });
         }
-        aiProvider = openrouter;
         selectedModel = model || "anthropic/claude-3.5-sonnet";
+        aiModel = openrouter(selectedModel);
         break;
       case "perplexity":
         if (!env.PERPLEXITY_API_KEY) {
@@ -88,16 +85,16 @@ export async function POST(req: Request) {
             status: 500,
           });
         }
-        aiProvider = perplexity;
         selectedModel = model || "llama-3.1-sonar-small-128k-online";
+        aiModel = perplexity(selectedModel);
         break;
       case "ollama":
-        aiProvider = ollama;
         selectedModel = model || "llama3.2:3b";
+        aiModel = ollama(selectedModel);
         break;
       case "lmstudio":
-        aiProvider = lmstudio;
         selectedModel = model || "llama-3.2-3b-instruct";
+        aiModel = lmstudio(selectedModel);
         break;
       default:
         return new Response("Invalid provider", { status: 400 });
@@ -105,7 +102,7 @@ export async function POST(req: Request) {
 
     // Create the streaming response
     const result = streamText({
-      model: aiProvider(selectedModel),
+      model: aiModel,
       messages: messages.map((msg: any) => {
         // Handle v5 alpha message structure with parts
         if (msg.parts && Array.isArray(msg.parts)) {
@@ -132,7 +129,29 @@ export async function POST(req: Request) {
       temperature: 0.7,
     });
 
-    return result.toDataStreamResponse();
+    // Debug: Check what methods are available on the result object
+    console.log(
+      "Available methods on streamText result:",
+      Object.getOwnPropertyNames(result)
+    );
+    console.log(
+      "Available methods (with descriptors):",
+      Object.getOwnPropertyDescriptors(result)
+    );
+
+    // Try the methods we know exist from TypeScript
+    if (typeof result.toDataStreamResponse === "function") {
+      return result.toDataStreamResponse();
+    } else if (typeof result.toTextStreamResponse === "function") {
+      return result.toTextStreamResponse();
+    } else {
+      // Fallback - create manual streaming response
+      return new Response(result.textStream, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+        },
+      });
+    }
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response("Internal server error", { status: 500 });
