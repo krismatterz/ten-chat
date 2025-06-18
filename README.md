@@ -109,7 +109,7 @@ OPENROUTER_API_KEY=sk-or-...
 PERPLEXITY_API_KEY=pplx-...
 
 # Local AI (Optional)
-OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_BASE_URL=http://localhost:11434
 LM_STUDIO_BASE_URL=http://localhost:1234/v1
 ```
 
