@@ -20,7 +20,6 @@ import {
   Trash2,
   Edit2,
   Copy,
-  Zap,
   GitBranch,
 } from "lucide-react";
 
@@ -323,9 +322,8 @@ export function AppSidebar() {
                       isActive={currentChatId === conversation._id}
                       className="group relative h-auto"
                     >
-                      <div
-                        role="button"
-                        tabIndex={0}
+                      <button
+                        type="button"
                         onClick={() =>
                           handleConversationClick(conversation._id)
                         }
@@ -340,10 +338,7 @@ export function AppSidebar() {
                             <Pin className="h-3 w-3 text-sidebar-foreground/70 fill-current" />
                           )}
                           {conversation.branchedFrom && (
-                            <GitBranch
-                              className="h-3 w-3 text-purple-500"
-                              title="Branched conversation"
-                            />
+                            <GitBranch className="h-3 w-3 text-purple-500" />
                           )}
                           <MessageSquare className="h-4 w-4 text-sidebar-foreground/70" />
                         </div>
@@ -357,24 +352,19 @@ export function AppSidebar() {
                               onBlur={() => handleSaveEdit(conversation._id)}
                               data-editing-id={conversation._id}
                               className="w-full bg-transparent border-none outline-none font-medium text-sidebar-foreground"
-                              autoFocus
                             />
                           ) : (
                             <h3 className="truncate font-medium text-sidebar-foreground leading-tight">
                               {conversation.title}
                             </h3>
                           )}
-                          <div className="flex items-center gap-1 text-xs text-sidebar-foreground/60 mt-1">
-                            <span className="capitalize">
-                              {conversation.provider}
-                            </span>
-                            <span>•</span>
+                          <div className="text-xs text-sidebar-foreground/60 mt-1">
                             <span>
                               {formatTimestamp(conversation.updatedAt)}
                             </span>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     </SidebarMenuButton>
                   </ContextMenuTrigger>
 
@@ -445,22 +435,14 @@ export function AppSidebar() {
       className="bg-sidebar border-sidebar-border modern-gradient"
     >
       <SidebarHeader>
-        {/* Logo Section */}
+        {/* Simple header with title and beta badge */}
         <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-              <Zap className="h-4 w-4 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sidebar-foreground text-sm">
-                  Ten Chat
-                </span>
-                <BetaBadge />
-              </div>
-              <span className="text-xs text-sidebar-foreground/60">
-                AI Assistant
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sidebar-foreground text-sm">
+                Ten Chat
               </span>
+              <BetaBadge />
             </div>
           </div>
         </div>
@@ -545,7 +527,9 @@ export function AppSidebar() {
 
               {/* Theme Toggle */}
               <SidebarMenuItem>
-                <ThemeToggle />
+                <SidebarMenuButton asChild>
+                  <ThemeToggle />
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
