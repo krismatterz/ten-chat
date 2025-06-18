@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import {
   ChevronDown,
+  ChevronUp,
   Zap,
   Heart,
   Brain,
@@ -290,7 +291,6 @@ export function AIProviderSelector({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            role="combobox"
             aria-expanded={open}
             className="h-8 px-3 text-xs gap-2 border justify-between min-w-[200px]"
           >
@@ -305,7 +305,11 @@ export function AIProviderSelector({
             {supportsReasoning(selectedModel) && (
               <Brain className="h-3 w-3 text-purple-500" />
             )}
-            <ChevronDown className="h-3 w-3 opacity-50" />
+            {open ? (
+              <ChevronUp className="h-3 w-3 opacity-50" />
+            ) : (
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            )}
           </Button>
         </PopoverTrigger>
 
