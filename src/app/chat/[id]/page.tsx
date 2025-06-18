@@ -9,7 +9,7 @@ interface ChatPageProps {
 
 export default function ChatPage({ params }: ChatPageProps) {
   return (
-    <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900">
+    <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <Sidebar currentChatId={params.id} />
 
