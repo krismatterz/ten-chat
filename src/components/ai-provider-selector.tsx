@@ -274,8 +274,10 @@ export function AIProviderSelector({
   };
 
   const handleModelSelect = (provider: string, model: string) => {
+    console.log("handleModelSelect called with:", provider, model);
     onProviderChange(provider, model);
     setOpen(false);
+    setSearchQuery(""); // Clear search when selecting
   };
 
   const supportsReasoning = (model: string) => {
@@ -315,8 +317,10 @@ export function AIProviderSelector({
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-96 p-0 bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl"
+          className="w-96 p-0 bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl z-[100]"
           align="start"
+          side="bottom"
+          sideOffset={4}
         >
           <Command className="bg-transparent">
             <CommandInput
@@ -335,10 +339,15 @@ export function AIProviderSelector({
                     <CommandItem
                       key={`${model.provider}-${model.id}`}
                       value={`${model.displayName} ${model.providerName}`}
-                      onSelect={() =>
-                        handleModelSelect(model.provider, model.id)
-                      }
-                      className="flex items-center gap-3 px-3 py-2"
+                      onSelect={(currentValue) => {
+                        console.log(
+                          "Favorite model selected:",
+                          model.id,
+                          model.provider
+                        );
+                        handleModelSelect(model.provider, model.id);
+                      }}
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer"
                     >
                       <div className="flex-shrink-0">
                         {getProviderIcon(model.provider)}
@@ -403,10 +412,15 @@ export function AIProviderSelector({
                     <CommandItem
                       key={`${model.provider}-${model.id}`}
                       value={`${model.displayName} ${model.providerName}`}
-                      onSelect={() =>
-                        handleModelSelect(model.provider, model.id)
-                      }
-                      className="flex items-center gap-3 px-3 py-2"
+                      onSelect={(currentValue) => {
+                        console.log(
+                          "Model selected:",
+                          model.id,
+                          model.provider
+                        );
+                        handleModelSelect(model.provider, model.id);
+                      }}
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer"
                     >
                       <div className="flex-shrink-0">
                         {getProviderIcon(model.provider)}

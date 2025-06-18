@@ -70,7 +70,8 @@ export const list = query({
     // Verify user owns the conversation
     const conversation = await ctx.db.get(conversationId);
     if (!conversation || conversation.userId !== user._id) {
-      throw new Error("Conversation not found");
+      // Return empty array instead of throwing error for deleted conversations
+      return [];
     }
 
     return await ctx.db

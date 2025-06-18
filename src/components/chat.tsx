@@ -21,6 +21,7 @@ import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
 import { FileUpload } from "./file-upload";
 import { AIProviderSelector } from "./ai-provider-selector";
 import { Button } from "./ui/button";
+import { SidebarTrigger } from "./ui/sidebar";
 import { AI_PROVIDERS, type ProviderType } from "~/lib/providers";
 
 interface FileAttachment {
@@ -634,6 +635,9 @@ export function Chat({ chatId }: ChatProps) {
             {/* Controls Row */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
+                {/* Sidebar Toggle */}
+                <SidebarTrigger className="h-8 w-8 bg-background/60 backdrop-blur-md border-border/30 hover:bg-background/80 hover:border-border/50 transition-all duration-200" />
+
                 {/* AI Provider Selector */}
                 <AIProviderSelector
                   selectedProvider={selectedProvider}
