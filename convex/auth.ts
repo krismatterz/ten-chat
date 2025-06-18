@@ -15,7 +15,6 @@ export async function getCurrentUser(ctx: { db: any }) {
     clerkId: "demo-user",
     email: "demo@tenchat.dev",
     name: "Demo User",
-    avatar: null,
     createdAt: now,
     lastActiveAt: now,
   });
