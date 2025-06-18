@@ -17,7 +17,7 @@ export default function ChatPage({ params }: ChatPageProps) {
   useEffect(() => {
     setCurrentChatId(id);
     return () => setCurrentChatId(null);
-  }, [id]); // Remove setCurrentChatId from deps to prevent infinite loop
+  }, [id, setCurrentChatId]); // Include setCurrentChatId to fix linter warning
 
   return (
     <div className="flex h-screen flex-col">

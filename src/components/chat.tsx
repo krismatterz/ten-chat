@@ -132,24 +132,16 @@ export function Chat({ chatId }: ChatProps) {
         try {
           const textContent = message.content || "";
 
-          // Check if this message already exists in Convex to prevent duplicates
-          const existingMessage = messagesData?.find(
-            (msg) => msg.content === textContent && msg.role === "assistant"
-          );
-
-          if (existingMessage) {
-            console.log("⚠️ Message already exists in Convex, skipping save");
-            return;
+          if (textContent.trim()) {
+            await addMessage({
+              conversationId,
+              role: "assistant",
+              content: textContent,
+              model: selectedModel,
+              provider: selectedProvider,
+            });
+            console.log("✅ AI message saved to Convex");
           }
-
-          await addMessage({
-            conversationId,
-            role: "assistant",
-            content: textContent,
-            model: selectedModel,
-            provider: selectedProvider,
-          });
-          console.log("✅ AI message saved to Convex");
         } catch (error) {
           console.error("❌ Failed to save AI message to Convex:", error);
         }
@@ -166,15 +158,20 @@ export function Chat({ chatId }: ChatProps) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [aiMessages]);
+  }, [aiMessages.length]); // Only depend on length, not the entire array
 
-  // Sync Convex messages with AI messages (AI SDK v4) - Prevent infinite loops
+  // Initialize AI messages from Convex only once when conversation loads
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Reset initialization when conversation changes
   useEffect(() => {
-    console.log(
-      "🔄 Sync effect triggered - messagesData length:",
-      messagesData?.length
-    );
-    if (messagesData && messagesData.length > 0) {
+    setHasInitialized(false);
+    setAiMessages([]); // Clear messages when switching conversations
+  }, [conversationId, setAiMessages]);
+
+  useEffect(() => {
+    // Only sync once when conversation first loads, not continuously
+    if (messagesData && messagesData.length > 0 && !hasInitialized) {
       const formattedMessages = messagesData.map((msg) => ({
         id: msg._id,
         role: msg.role as "user" | "assistant",
@@ -183,34 +180,15 @@ export function Chat({ chatId }: ChatProps) {
         attachments: msg.attachments,
       }));
 
-      // Only update if messages actually changed to prevent loops
-      setAiMessages((prev) => {
-        // Compare lengths first (quick check)
-        if (prev.length !== formattedMessages.length) {
-          console.log("🔄 Length changed, updating messages");
-          return formattedMessages;
-        }
-
-        // Compare message content (detailed check)
-        const hasChanges = prev.some((prevMsg, index) => {
-          const newMsg = formattedMessages[index];
-          return (
-            !newMsg ||
-            prevMsg.id !== newMsg.id ||
-            prevMsg.content !== newMsg.content
-          );
-        });
-
-        if (hasChanges) {
-          console.log("🔄 Content changed, updating messages");
-        } else {
-          console.log("🔄 No changes detected, keeping current messages");
-        }
-
-        return hasChanges ? formattedMessages : prev;
-      });
+      setAiMessages(formattedMessages);
+      setHasInitialized(true);
     }
-  }, [messagesData]); // Remove setAiMessages from dependencies to prevent infinite loop
+
+    // Reset initialization flag when conversation changes
+    if (!messagesData || messagesData.length === 0) {
+      setHasInitialized(false);
+    }
+  }, [messagesData, hasInitialized, setAiMessages]); // Include all dependencies
 
   // Direct file upload handler
   const handleDirectFileUpload = () => {
@@ -588,7 +566,7 @@ export function Chat({ chatId }: ChatProps) {
                           {/* Tooltip - Positioned Below */}
                           <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-popover/95 backdrop-blur-sm text-popover-foreground text-xs rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 min-w-[180px]">
                             {/* Tooltip arrow pointing up */}
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-popover border-l border-t rotate-45 mb-1"></div>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-popover border-l border-t rotate-45 mb-1" />
 
                             <div className="text-center space-y-1">
                               <div className="font-semibold text-foreground">
@@ -598,7 +576,7 @@ export function Chat({ chatId }: ChatProps) {
                                 {selectedModel}
                               </div>
                               <div className="flex items-center justify-center gap-1 text-green-500">
-                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                                 <span className="text-[10px] font-medium">
                                   Streaming
                                 </span>
@@ -610,6 +588,7 @@ export function Chat({ chatId }: ChatProps) {
                         {/* Message Actions */}
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleCopyMessage(msg.content);
@@ -621,6 +600,7 @@ export function Chat({ chatId }: ChatProps) {
                           </button>
 
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleBranchFromMessage(msg.id);
@@ -632,6 +612,7 @@ export function Chat({ chatId }: ChatProps) {
                           </button>
 
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleRetryMessage(index);

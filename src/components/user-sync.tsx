@@ -22,7 +22,7 @@ export function UserSync() {
     }
 
     syncUser();
-  }, [isLoaded, user]); // Remove upsertUser from deps to prevent infinite loop
+  }, [isLoaded, user, upsertUser]); // Include upsertUser to fix linter warning
 
   return null; // This component doesn't render anything
 }
