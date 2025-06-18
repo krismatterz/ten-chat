@@ -100,58 +100,21 @@ export async function POST(req: Request) {
         return new Response("Invalid provider", { status: 400 });
     }
 
-    // Create the streaming response
+    // Create the streaming response using AI SDK v4
     const result = streamText({
       model: aiModel,
-      messages: messages.map((msg: any) => {
-        // Handle v5 alpha message structure with parts
-        if (msg.parts && Array.isArray(msg.parts)) {
-          const textContent = msg.parts
-            .filter((part: any) => part.type === "text")
-            .map((part: any) => part.text)
-            .join("");
-
-          return {
-            role: msg.role,
-            content: textContent || msg.content || "",
-          };
-        }
-
-        // Fallback for simple message structure
-        return {
-          role: msg.role,
-          content: msg.content || "",
-        };
-      }),
+      messages: messages.map((msg: any) => ({
+        role: msg.role,
+        content: msg.content || "",
+      })),
       system:
         "You are a helpful AI assistant. Be concise, friendly, and informative in your responses.",
       maxTokens: 2048,
       temperature: 0.7,
     });
 
-    // Debug: Check what methods are available on the result object
-    console.log(
-      "Available methods on streamText result:",
-      Object.getOwnPropertyNames(result)
-    );
-    console.log(
-      "Available methods (with descriptors):",
-      Object.getOwnPropertyDescriptors(result)
-    );
-
-    // Try the methods we know exist from TypeScript
-    if (typeof result.toDataStreamResponse === "function") {
-      return result.toDataStreamResponse();
-    } else if (typeof result.toTextStreamResponse === "function") {
-      return result.toTextStreamResponse();
-    } else {
-      // Fallback - create manual streaming response
-      return new Response(result.textStream, {
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-        },
-      });
-    }
+    // Use AI SDK v4 method
+    return result.toDataStreamResponse();
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response("Internal server error", { status: 500 });

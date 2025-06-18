@@ -45,16 +45,16 @@ export function Chat({ chatId }: ChatProps) {
     conversationId ? { conversationId } : "skip"
   );
 
-  // AI Chat hook for streaming (AI SDK v5 alpha)
+  // AI Chat hook for streaming (AI SDK v4 stable)
   const {
     messages: aiMessages,
     input,
     handleInputChange,
     handleSubmit: aiHandleSubmit,
-    status,
+    isLoading,
     setMessages: setAiMessages,
   } = useChat({
-    experimental_throttle: 100,
+    api: "/api/chat",
     body: {
       provider: selectedProvider,
       model: selectedModel,
@@ -79,22 +79,21 @@ export function Chat({ chatId }: ChatProps) {
     },
   });
 
-  // Derived loading state from status
-  const aiIsLoading = status === "streaming" || status === "submitted";
+  // Use loading state from AI SDK v4
+  const aiIsLoading = isLoading;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Sync Convex messages with AI messages
+  // Sync Convex messages with AI messages (AI SDK v4)
   useEffect(() => {
     if (messagesData && messagesData.length > 0) {
       const formattedMessages = messagesData.map((msg) => ({
         id: msg._id,
         role: msg.role as "user" | "assistant",
         content: msg.content,
-        parts: [{ type: "text" as const, text: msg.content }],
       }));
       setAiMessages(formattedMessages);
     }
@@ -248,7 +247,7 @@ export function Chat({ chatId }: ChatProps) {
                       : "bg-white text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-neutral-100"
                   )}
                 >
-                  {/* Render message content */}
+                  {/* Render message content (AI SDK v4) */}
                   <div className="whitespace-pre-wrap">{msg.content}</div>
 
                   {/* Display attachments if they exist */}
