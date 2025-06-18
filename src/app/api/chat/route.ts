@@ -1,4 +1,4 @@
-import { streamText, type CoreMessage } from "ai";
+import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -104,27 +104,28 @@ export async function POST(req: Request) {
     }
 
     // Create the streaming response
-    const result = await streamText({
+    const result = streamText({
       model: aiProvider(selectedModel),
-      messages: messages.map(
-        (msg: { role: string; content: string }): CoreMessage => {
-          if (
-            msg.role === "user" ||
-            msg.role === "assistant" ||
-            msg.role === "system"
-          ) {
-            return {
-              role: msg.role,
-              content: msg.content,
-            };
-          }
-          // Default to user role if unknown
+      messages: messages.map((msg: any) => {
+        // Handle v5 alpha message structure with parts
+        if (msg.parts && Array.isArray(msg.parts)) {
+          const textContent = msg.parts
+            .filter((part: any) => part.type === "text")
+            .map((part: any) => part.text)
+            .join("");
+
           return {
-            role: "user",
-            content: msg.content,
+            role: msg.role,
+            content: textContent || msg.content || "",
           };
         }
-      ),
+
+        // Fallback for simple message structure
+        return {
+          role: msg.role,
+          content: msg.content || "",
+        };
+      }),
       system:
         "You are a helpful AI assistant. Be concise, friendly, and informative in your responses.",
       maxTokens: 2048,

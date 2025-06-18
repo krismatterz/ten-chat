@@ -1,8 +1,12 @@
 import { createRouteHandler } from "uploadthing/next";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { UploadThingError } from "uploadthing/server";
 
-const f = createUploadthing();
+const f = createUploadthing({
+  errorFormatter: (err) => {
+    console.log("UploadThing error:", err.message);
+    return { message: err.message };
+  },
+});
 
 // FileRouter for your app, can contain multiple FileRoutes
 export const ourFileRouter = {
@@ -15,10 +19,20 @@ export const ourFileRouter = {
     // Set permissions and file types for this FileRoute
     .middleware(async ({ req }) => {
       // This code runs on your server before upload
-      // You can add auth logic here if needed
+      try {
+        // For now, use demo user - this will be replaced with Clerk auth later
+        const userId = "demo-user";
 
-      // Whatever is returned here is accessible in onUploadComplete as `metadata`
-      return { userId: "demo-user" }; // Will be replaced with real auth later
+        if (!userId) {
+          throw new Error("Unauthorized - no user found");
+        }
+
+        // Whatever is returned here is accessible in onUploadComplete as `metadata`
+        return { userId };
+      } catch (error) {
+        console.error("Upload middleware error:", error);
+        throw error;
+      }
     })
     .onUploadComplete(async ({ metadata, file }) => {
       // This code RUNS ON YOUR SERVER after upload
@@ -26,7 +40,13 @@ export const ourFileRouter = {
       console.log("file url", file.url);
 
       // Return data that will be sent to the client
-      return { uploadedBy: metadata.userId, url: file.url, name: file.name };
+      return {
+        uploadedBy: metadata.userId,
+        url: file.url,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      };
     }),
 } satisfies FileRouter;
 

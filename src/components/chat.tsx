@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
 import { Send, User, Bot, Settings, Zap } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -45,13 +45,13 @@ export function Chat({ chatId }: ChatProps) {
     conversationId ? { conversationId } : "skip"
   );
 
-  // AI Chat hook for streaming
+  // AI Chat hook for streaming (AI SDK v5 alpha)
   const {
     messages: aiMessages,
     input,
     handleInputChange,
     handleSubmit: aiHandleSubmit,
-    isLoading: aiIsLoading,
+    status,
     setMessages: setAiMessages,
   } = useChat({
     api: "/api/chat",
@@ -62,10 +62,17 @@ export function Chat({ chatId }: ChatProps) {
     onFinish: async (message) => {
       // Save AI response to Convex
       if (conversationId) {
+        // Extract text content from message parts
+        const textContent =
+          message.parts
+            ?.filter((part) => part.type === "text")
+            .map((part) => part.text)
+            .join("") || "";
+
         await addMessage({
           conversationId,
           role: "assistant",
-          content: message.content,
+          content: textContent,
           model: selectedModel,
           provider: selectedProvider,
         });
@@ -74,8 +81,10 @@ export function Chat({ chatId }: ChatProps) {
     onError: (error) => {
       console.error("Chat error:", error);
     },
-    keepLastMessageOnError: true,
   });
+
+  // Derived loading state from status
+  const aiIsLoading = status === "streaming" || status === "submitted";
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -84,15 +93,19 @@ export function Chat({ chatId }: ChatProps) {
 
   // Sync Convex messages with AI messages
   useEffect(() => {
-    if (messagesData) {
+    if (messagesData && messagesData.length > 0) {
       const formattedMessages = messagesData.map((msg) => ({
         id: msg._id,
         role: msg.role as "user" | "assistant",
         content: msg.content,
+        // Include parts structure for v5 alpha compatibility
+        parts: msg.content
+          ? [{ type: "text" as const, text: msg.content }]
+          : undefined,
       }));
       setAiMessages(formattedMessages);
     }
-  }, [messagesData, setAiMessages]);
+  }, [messagesData]); // Remove setAiMessages from dependencies to prevent infinite loop
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,7 +255,38 @@ export function Chat({ chatId }: ChatProps) {
                       : "bg-white text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-neutral-100"
                   )}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  {/* Render message parts (v5 alpha structure) */}
+                  <div className="whitespace-pre-wrap">
+                    {msg.parts?.map((part, partIndex) => {
+                      switch (part.type) {
+                        case "text":
+                          return <span key={partIndex}>{part.text}</span>;
+                        case "tool-invocation":
+                          return (
+                            <div
+                              key={partIndex}
+                              className="my-2 p-2 bg-neutral-100 dark:bg-neutral-700 rounded text-sm"
+                            >
+                              <span className="font-medium">
+                                🔧 {part.toolInvocation.toolName}
+                              </span>
+                              {part.toolInvocation.state === "result" && (
+                                <div className="mt-1 text-xs opacity-75">
+                                  Result:{" "}
+                                  {JSON.stringify(part.toolInvocation.result)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        default:
+                          return (
+                            <span key={partIndex} className="opacity-50">
+                              [{part.type}]
+                            </span>
+                          );
+                      }
+                    })}
+                  </div>
 
                   {/* Display attachments if they exist */}
                   {messagesData?.find((m) => m._id === msg.id)?.attachments && (

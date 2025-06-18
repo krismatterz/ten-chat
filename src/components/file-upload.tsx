@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { UploadDropzone } from "~/lib/uploadthing";
-import { X, Paperclip, FileText, Image, File } from "lucide-react";
+import { X, FileText, Image, File } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 interface FileAttachment {
@@ -26,7 +26,7 @@ export function FileUpload({
   disabled = false,
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [showDropzone, setShowDropzone] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -70,60 +70,67 @@ export function FileUpload({
         </div>
       )}
 
-      {/* Upload Button */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setShowDropzone(true)}
-          disabled={disabled || isUploading}
-          className={cn(
-            "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-            "border border-neutral-300 hover:bg-neutral-50 dark:border-neutral-600 dark:hover:bg-neutral-800",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <Paperclip className="h-4 w-4" />
-          {isUploading ? "Uploading..." : "Attach Files"}
-        </button>
-      </div>
-
-      {/* Upload Dropzone */}
-      {showDropzone && (
-        <div className="rounded-lg border border-neutral-300 p-4 dark:border-neutral-600">
+      {/* Auto Upload Dropzone - Always Visible */}
+      {uploadError ? (
+        <div className="rounded-lg border-2 border-dashed border-red-300 bg-red-50 p-4 dark:border-red-600 dark:bg-red-900/20">
+          <div className="text-center text-red-800 dark:text-red-200">
+            <FileText className="mx-auto h-8 w-8 mb-2 text-red-600" />
+            <p className="font-medium">Upload Error</p>
+            <p className="text-sm mt-1">{uploadError}</p>
+            <button
+              type="button"
+              onClick={() => setUploadError(null)}
+              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-lg border-2 border-dashed border-neutral-300 p-4 dark:border-neutral-600 transition-colors hover:border-neutral-400 dark:hover:border-neutral-500">
           <UploadDropzone
             endpoint="chatAttachment"
             onClientUploadComplete={(res) => {
+              console.log("Upload complete:", res);
               const files = res.map((file) => ({
                 name: file.name,
-                url: file.url,
+                url: file.url, // Using correct UploadThing property
                 type: file.type || "application/octet-stream",
                 size: file.size,
               }));
               onFilesUploaded(files);
               setIsUploading(false);
-              setShowDropzone(false);
             }}
             onUploadError={(error: Error) => {
               console.error("Upload error:", error);
               setIsUploading(false);
+              setUploadError(
+                error.message ||
+                  "Please check your UploadThing configuration and environment variables"
+              );
             }}
             onUploadBegin={() => {
               setIsUploading(true);
+              setUploadError(null); // Clear any previous errors
             }}
+            disabled={disabled || isUploading}
             appearance={{
-              container:
-                "border-dashed border-neutral-300 dark:border-neutral-600",
-              label: "text-neutral-600 dark:text-neutral-400",
-              allowedContent: "text-neutral-500 dark:text-neutral-500 text-xs",
+              container: "w-full border-none",
+              uploadIcon: "text-neutral-400",
+              label: "text-neutral-600 dark:text-neutral-400 text-sm",
+              allowedContent:
+                "text-neutral-500 dark:text-neutral-500 text-xs mt-1",
+              button: "hidden", // Hide the upload button - auto upload on drop
+            }}
+            content={{
+              label: isUploading
+                ? "Uploading..."
+                : disabled
+                  ? "Upload disabled"
+                  : "Drag files here or click to browse",
+              allowedContent: "Images (4MB), PDFs (16MB), Text files (1MB)",
             }}
           />
-          <button
-            onClick={() => setShowDropzone(false)}
-            type="button"
-            className="mt-2 text-sm text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
-          >
-            Cancel
-          </button>
         </div>
       )}
     </div>
