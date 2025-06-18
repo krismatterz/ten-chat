@@ -5,7 +5,7 @@
     var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
-  /* Light theme */
+  /* Light theme - Inspired by Dub.co gradients */
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
@@ -29,11 +29,11 @@
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
+  --background: 0 0% 9.2%; /* #171717 */
   --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
+  --card: 0 0% 11%; /* Slightly lighter than background */
   --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
+  --popover: 0 0% 9.2%;
   --popover-foreground: 210 40% 98%;
   --primary: 210 40% 98%;
   --primary-foreground: 222.2 47.4% 11.2%;
@@ -58,4 +58,71 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+}
+
+/* Custom gradient classes inspired by Dub.co and Dia */
+.gradient-dub-light {
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #fefefe 25%,
+    #fafafa 50%,
+    #f5f5f5 100%
+  );
+}
+
+.gradient-dub-dark {
+  background: linear-gradient(
+    180deg,
+    #171717 0%,
+    #1a1a1a 25%,
+    #1e1e1e 50%,
+    #262626 100%
+  );
+}
+
+.gradient-dia-light {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #fffef9 25%,
+    #fefcf0 50%,
+    #fdf7e7 75%,
+    #fbf1dc 100%
+  );
+}
+
+.gradient-dia-dark {
+  background: linear-gradient(
+    135deg,
+    #171717 0%,
+    #1a1918 25%,
+    #1e1d1b 50%,
+    #23211e 75%,
+    #282521 100%
+  );
+}
+
+.gradient-modern-light {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #fefefe 20%,
+    #fafaff 40%,
+    #f8f9ff 60%,
+    #f5f7ff 80%,
+    #f0f4ff 100%
+  );
+}
+
+.gradient-modern-dark {
+  background: linear-gradient(
+    135deg,
+    #171717 0%,
+    #181818 20%,
+    #1a1a1b 40%,
+    #1c1c1e 60%,
+    #1e1e21 80%,
+    #202024 100%
+  );
 }

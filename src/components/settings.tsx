@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AI_PROVIDERS, type ProviderType } from "~/lib/providers";
 import { cn } from "~/lib/utils";
+import { Button } from "./ui/button";
 
 interface UserSettings {
   defaultProvider: ProviderType;
@@ -73,14 +74,12 @@ export function Settings() {
   ];
 
   return (
-    <div className="flex h-full bg-neutral-50 dark:bg-neutral-900">
+    <div className="flex h-full gradient-dub-light dark:gradient-dub-dark">
       {/* Settings Sidebar */}
-      <div className="w-64 bg-white dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700">
-        <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
-          <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-            Settings
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+      <div className="w-64 bg-card/50 backdrop-blur-sm border-r">
+        <div className="p-6 border-b">
+          <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage your preferences
           </p>
         </div>
@@ -95,8 +94,8 @@ export function Settings() {
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors",
                   activeSection === section.id
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-                    : "text-neutral-600 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-700"
+                    ? "bg-primary/10 text-primary border border-primary/20"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -110,33 +109,34 @@ export function Settings() {
       {/* Settings Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-6 py-4">
+        <div className="bg-card/50 backdrop-blur-sm border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+              <h2 className="text-lg font-semibold text-foreground">
                 {sections.find((s) => s.id === activeSection)?.label}
               </h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="text-sm text-muted-foreground">
                 Configure your Ten Chat experience
               </p>
             </div>
 
             {hasChanges && (
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="outline"
                   onClick={handleReset}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+                  className="flex items-center gap-2"
                 >
                   <RotateCcw className="h-4 w-4" />
                   Reset
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleSave}
-                  className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-2"
                 >
                   <Save className="h-4 w-4" />
                   Save Changes
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -147,23 +147,21 @@ export function Settings() {
           <div className="max-w-2xl space-y-8">
             {activeSection === "general" && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+                <div className="bg-card/50 backdrop-blur-sm border rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-foreground mb-4">
                     Profile
                   </h3>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
-                        <User className="h-8 w-8 text-neutral-500" />
+                      <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                        <User className="h-8 w-8 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                          Demo User
-                        </p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                        <p className="font-medium text-foreground">Demo User</p>
+                        <p className="text-sm text-muted-foreground">
                           demo@tenchat.app
                         </p>
-                        <p className="text-xs text-neutral-400 dark:text-neutral-500">
+                        <p className="text-xs text-muted-foreground">
                           Free Plan
                         </p>
                       </div>
@@ -171,13 +169,13 @@ export function Settings() {
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+                <div className="bg-card/50 backdrop-blur-sm border rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-foreground mb-4">
                     Performance
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Streaming Speed
                       </label>
                       <select
@@ -185,7 +183,7 @@ export function Settings() {
                         onChange={(e) =>
                           updateSetting("streamingSpeed", e.target.value as any)
                         }
-                        className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                        className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
                       >
                         <option value="fast">Fast (Low latency)</option>
                         <option value="normal">Normal (Balanced)</option>
@@ -199,13 +197,13 @@ export function Settings() {
 
             {activeSection === "ai" && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+                <div className="bg-card/50 backdrop-blur-sm border rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-foreground mb-4">
                     Default AI Provider
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Provider
                       </label>
                       <select
@@ -223,7 +221,7 @@ export function Settings() {
                             );
                           }
                         }}
-                        className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                        className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
                       >
                         {AI_PROVIDERS.map((provider) => (
                           <option key={provider.id} value={provider.id}>
@@ -234,7 +232,7 @@ export function Settings() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Default Model
                       </label>
                       <select
@@ -242,7 +240,7 @@ export function Settings() {
                         onChange={(e) =>
                           updateSetting("defaultModel", e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                        className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
                       >
                         {currentProvider?.models.map((model) => (
                           <option key={model} value={model}>
@@ -252,14 +250,14 @@ export function Settings() {
                       </select>
                     </div>
 
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
                       <div className="flex items-start gap-3">
-                        <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                        <Bot className="h-5 w-5 text-primary mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                          <p className="text-sm font-medium text-foreground">
                             Provider Information
                           </p>
-                          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                          <p className="text-sm text-muted-foreground mt-1">
                             {currentProvider?.description}
                           </p>
                         </div>
@@ -272,8 +270,8 @@ export function Settings() {
 
             {activeSection === "appearance" && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+                <div className="bg-card/50 backdrop-blur-sm border rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-foreground mb-4">
                     Theme
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
@@ -292,8 +290,8 @@ export function Settings() {
                           className={cn(
                             "p-4 border rounded-lg text-center transition-colors",
                             settings.theme === theme.value
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                              : "border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-input hover:bg-accent hover:text-accent-foreground"
                           )}
                         >
                           <Icon className="h-6 w-6 mx-auto mb-2" />
@@ -308,13 +306,13 @@ export function Settings() {
 
             {activeSection === "privacy" && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+                <div className="bg-card/50 backdrop-blur-sm border rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-foreground mb-4">
                     Data Management
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Data Retention (days)
                       </label>
                       <select
@@ -325,7 +323,7 @@ export function Settings() {
                             parseInt(e.target.value)
                           )
                         }
-                        className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+                        className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
                       >
                         <option value={7}>7 days</option>
                         <option value={30}>30 days</option>
@@ -337,10 +335,10 @@ export function Settings() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        <p className="text-sm font-medium text-foreground">
                           Auto-archive old conversations
                         </p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                        <p className="text-sm text-muted-foreground">
                           Automatically archive conversations after 30 days
                         </p>
                       </div>
@@ -350,14 +348,12 @@ export function Settings() {
                         }
                         className={cn(
                           "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                          settings.autoArchive
-                            ? "bg-blue-600"
-                            : "bg-neutral-200 dark:bg-neutral-600"
+                          settings.autoArchive ? "bg-primary" : "bg-muted"
                         )}
                       >
                         <span
                           className={cn(
-                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out",
                             settings.autoArchive
                               ? "translate-x-5"
                               : "translate-x-0"
@@ -372,17 +368,17 @@ export function Settings() {
 
             {activeSection === "notifications" && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-4">
+                <div className="bg-card/50 backdrop-blur-sm border rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-foreground mb-4">
                     Notification Preferences
                   </h3>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        <p className="text-sm font-medium text-foreground">
                           Enable notifications
                         </p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                        <p className="text-sm text-muted-foreground">
                           Get notified about new messages and updates
                         </p>
                       </div>
@@ -395,14 +391,12 @@ export function Settings() {
                         }
                         className={cn(
                           "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                          settings.notifications
-                            ? "bg-blue-600"
-                            : "bg-neutral-200 dark:bg-neutral-600"
+                          settings.notifications ? "bg-primary" : "bg-muted"
                         )}
                       >
                         <span
                           className={cn(
-                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out",
                             settings.notifications
                               ? "translate-x-5"
                               : "translate-x-0"

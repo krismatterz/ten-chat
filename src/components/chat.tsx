@@ -30,6 +30,9 @@ export function Chat({ chatId }: ChatProps) {
   const [selectedModel, setSelectedModel] = useState<string>(
     "claude-3-5-sonnet-20241022"
   );
+  const [reasoningLevel, setReasoningLevel] = useState<"low" | "mid" | "high">(
+    "mid"
+  );
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -41,7 +44,9 @@ export function Chat({ chatId }: ChatProps) {
 
   // Convert chatId to Convex ID type if it exists as a conversation
   const [conversationId, setConversationId] =
-    useState<Id<"conversations"> | null>(null);
+    useState<Id<"conversations"> | null>(
+      chatId !== "new" ? (chatId as Id<"conversations">) : null
+    );
 
   // Query messages only if we have a valid conversation ID
   const messagesData = useQuery(
@@ -62,6 +67,7 @@ export function Chat({ chatId }: ChatProps) {
     body: {
       provider: selectedProvider,
       model: selectedModel,
+      reasoning: reasoningLevel,
     },
     onFinish: async (message) => {
       // Save AI response to Convex
@@ -89,7 +95,7 @@ export function Chat({ chatId }: ChatProps) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  }, [aiMessages]);
 
   // Sync Convex messages with AI messages (AI SDK v4)
   useEffect(() => {
@@ -122,6 +128,9 @@ export function Chat({ chatId }: ChatProps) {
         });
         setConversationId(convId);
         setIsFirstMessage(false);
+
+        // Update URL to reflect the new conversation
+        window.history.pushState({}, "", `/chat/${convId}`);
       }
 
       // Create user message with attachments for AI
@@ -188,12 +197,12 @@ export function Chat({ chatId }: ChatProps) {
   const popularEmojis = ["👍", "❤️", "😊", "😮", "😢", "😡"];
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col gradient-dia-light dark:gradient-dia-dark">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="mx-auto max-w-3xl space-y-4">
           {aiMessages.length === 0 ? (
-            <div className="flex h-full items-center justify-center">
+            <div className="flex h-full items-center justify-center min-h-[60vh]">
               <div className="text-center">
                 <Bot className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 font-semibold text-foreground">
@@ -261,93 +270,6 @@ export function Chat({ chatId }: ChatProps) {
                         ))}
                     </div>
                   )}
-
-                  {/* Display reactions */}
-                  {(() => {
-                    const messageData = messagesData?.find(
-                      (m) => m._id === msg.id
-                    );
-                    const reactions = messageData?.reactions || [];
-
-                    if (
-                      reactions.length === 0 &&
-                      !msg.id?.startsWith("temp-")
-                    ) {
-                      return null;
-                    }
-
-                    // Group reactions by emoji
-                    const reactionGroups = reactions.reduce(
-                      (acc, reaction) => {
-                        if (!acc[reaction.emoji]) {
-                          acc[reaction.emoji] = [];
-                        }
-                        acc[reaction.emoji].push(reaction);
-                        return acc;
-                      },
-                      {} as Record<string, typeof reactions>
-                    );
-
-                    return (
-                      <div className="mt-2 flex items-center gap-1 flex-wrap">
-                        {/* Existing reactions */}
-                        {Object.entries(reactionGroups).map(
-                          ([emoji, reactionList]) => (
-                            <button
-                              key={emoji}
-                              onClick={() => handleReaction(msg.id, emoji)}
-                              className={cn(
-                                "group flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors",
-                                msg.role === "user"
-                                  ? "bg-primary/20 hover:bg-primary/30"
-                                  : "bg-muted hover:bg-muted/80"
-                              )}
-                            >
-                              <span>{emoji}</span>
-                              <span className="text-xs">
-                                {reactionList.length}
-                              </span>
-                            </button>
-                          )
-                        )}
-
-                        {/* Add reaction button (only for non-temporary messages) */}
-                        {!msg.id?.startsWith("temp-") && (
-                          <div className="group relative">
-                            <button
-                              className={cn(
-                                "opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 rounded-full transition-all",
-                                msg.role === "user"
-                                  ? "bg-primary/20 hover:bg-primary/30"
-                                  : "bg-muted hover:bg-muted/80"
-                              )}
-                              title="Add reaction"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </button>
-
-                            {/* Reaction picker (simplified) */}
-                            <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
-                              <div className="flex gap-1 p-2 bg-card rounded-lg shadow-lg border">
-                                {popularEmojis.map((emoji) => (
-                                  <button
-                                    key={emoji}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleReaction(msg.id, emoji);
-                                    }}
-                                    className="w-8 h-8 flex items-center justify-center rounded hover:bg-muted transition-colors"
-                                  >
-                                    {emoji}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
 
                   <div className="mt-1 flex items-center justify-between">
                     <p
@@ -463,7 +385,9 @@ export function Chat({ chatId }: ChatProps) {
               <AIProviderSelector
                 selectedProvider={selectedProvider}
                 selectedModel={selectedModel}
+                reasoningLevel={reasoningLevel}
                 onProviderChange={handleProviderChange}
+                onReasoningChange={setReasoningLevel}
               />
               {attachments.length > 0 && (
                 <span className="text-xs text-muted-foreground">
