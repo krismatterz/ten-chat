@@ -34,6 +34,84 @@ const lmstudio = createOpenAI({
   apiKey: "lm-studio", // LM Studio doesn't require a real API key
 });
 
+// Helper function to fetch text content from a URL
+async function fetchTextContent(url: string): Promise<string> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch: ${response.statusText}`);
+    }
+    return await response.text();
+  } catch (error) {
+    console.error("Error fetching text content:", error);
+    return `[Error: Could not read file content from ${url}]`;
+  }
+}
+
+// Helper function to process message content with attachments
+async function processMessageContent(message: any) {
+  // If no attachments, return simple text content
+  if (!message.attachments || message.attachments.length === 0) {
+    return message.content || "";
+  }
+
+  // Build multimodal content array
+  const contentParts: any[] = [];
+
+  // Add text content if it exists
+  if (message.content && message.content.trim()) {
+    contentParts.push({
+      type: "text",
+      text: message.content,
+    });
+  }
+
+  // Process each attachment
+  for (const attachment of message.attachments) {
+    const { type, url, name } = attachment;
+
+    if (type.startsWith("image/")) {
+      // Handle images - use URL source for AI SDK v4
+      contentParts.push({
+        type: "image",
+        source: {
+          type: "url",
+          url: url,
+        },
+      });
+    } else if (type === "text/plain" || type.startsWith("text/")) {
+      // Handle text files - fetch content and include as text
+      const textContent = await fetchTextContent(url);
+      contentParts.push({
+        type: "text",
+        text: `File: ${name}\n\n${textContent}`,
+      });
+    } else if (type === "application/pdf") {
+      // For PDFs, we'll include a note about the file since we can't easily extract text
+      contentParts.push({
+        type: "text",
+        text: `PDF file attached: ${name}\nNote: This is a PDF file. Please note that I cannot directly read PDF content from the URL. If you need me to analyze the PDF content, please provide the text content separately.`,
+      });
+    } else {
+      // For other file types, include a note
+      contentParts.push({
+        type: "text",
+        text: `File attached: ${name} (${type})\nNote: This file type is attached but cannot be directly processed.`,
+      });
+    }
+  }
+
+  // If no content parts were added, return default message
+  if (contentParts.length === 0) {
+    contentParts.push({
+      type: "text",
+      text: "Files shared",
+    });
+  }
+
+  return contentParts;
+}
+
 export async function POST(req: Request) {
   try {
     const { messages, provider = "anthropic", model } = await req.json();
@@ -100,15 +178,20 @@ export async function POST(req: Request) {
         return new Response("Invalid provider", { status: 400 });
     }
 
+    // Process messages with attachments for multimodal content
+    const processedMessages = await Promise.all(
+      messages.map(async (msg: any) => ({
+        role: msg.role,
+        content: await processMessageContent(msg),
+      }))
+    );
+
     // Create the streaming response using AI SDK v4
     const result = streamText({
       model: aiModel,
-      messages: messages.map((msg: any) => ({
-        role: msg.role,
-        content: msg.content || "",
-      })),
+      messages: processedMessages,
       system:
-        "You are a helpful AI assistant. Be concise, friendly, and informative in your responses.",
+        "You are a helpful AI assistant. Be concise, friendly, and informative in your responses. When images are shared, analyze them thoroughly and provide detailed descriptions or answer questions about them. When files are shared, read their content carefully and help the user with any questions about the content.",
       maxTokens: 2048,
       temperature: 0.7,
     });

@@ -18,7 +18,7 @@ export const env = createEnv({
     PERPLEXITY_API_KEY: z.string().optional(),
     OLLAMA_BASE_URL: z.string().optional(),
     LM_STUDIO_BASE_URL: z.string().optional(),
-    UPLOADTHING_SECRET: z.string().optional(),
+    UPLOADTHING_TOKEN: z.string().optional(),
   },
 
   /**
@@ -29,7 +29,6 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_CONVEX_URL: z.string(),
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string(),
-    NEXT_PUBLIC_UPLOADTHING_APP_ID: z.string().optional(),
   },
 
   /**
@@ -49,8 +48,7 @@ export const env = createEnv({
     PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
     OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
     LM_STUDIO_BASE_URL: process.env.LM_STUDIO_BASE_URL,
-    UPLOADTHING_SECRET: process.env.UPLOADTHING_SECRET,
-    NEXT_PUBLIC_UPLOADTHING_APP_ID: process.env.NEXT_PUBLIC_UPLOADTHING_APP_ID,
+    UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -94,6 +94,8 @@ export function Chat({ chatId }: ChatProps) {
         id: msg._id,
         role: msg.role as "user" | "assistant",
         content: msg.content,
+        // Include attachments for API processing
+        attachments: msg.attachments,
       }));
       setAiMessages(formattedMessages);
     }
@@ -118,6 +120,17 @@ export function Chat({ chatId }: ChatProps) {
         setIsFirstMessage(false);
       }
 
+      // Create user message with attachments for AI
+      const userMessage = {
+        id: `temp-${Date.now()}`, // Temporary ID
+        role: "user" as const,
+        content: input || (attachments.length > 0 ? "Shared files" : ""),
+        attachments: attachments.length > 0 ? attachments : undefined,
+      };
+
+      // Add user message to AI messages immediately
+      setAiMessages((prev) => [...prev, userMessage]);
+
       // Save user message to Convex with attachments
       await addMessage({
         conversationId: convId,
@@ -126,11 +139,14 @@ export function Chat({ chatId }: ChatProps) {
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
-      // Clear attachments after sending
+      // Clear input and attachments
       setAttachments([]);
 
-      // Send to AI
-      aiHandleSubmit(e);
+      // For AI SDK, we need to trigger the chat with the current messages
+      // Since we're using attachments, we'll trigger a manual API call
+      if (input.trim() || attachments.length > 0) {
+        aiHandleSubmit(e);
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -139,7 +155,12 @@ export function Chat({ chatId }: ChatProps) {
   const currentProvider = AI_PROVIDERS.find((p) => p.id === selectedProvider);
 
   const handleFilesUploaded = (files: FileAttachment[]) => {
-    setAttachments((prev) => [...prev, ...files]);
+    console.log("📎 Files uploaded to chat:", files);
+    setAttachments((prev) => {
+      const newAttachments = [...prev, ...files];
+      console.log("📋 Updated attachments:", newAttachments);
+      return newAttachments;
+    });
   };
 
   const handleRemoveAttachment = (index: number) => {

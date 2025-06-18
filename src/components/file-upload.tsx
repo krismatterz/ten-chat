@@ -91,25 +91,29 @@ export function FileUpload({
           <UploadDropzone
             endpoint="chatAttachment"
             onClientUploadComplete={(res) => {
-              console.log("Upload complete:", res);
+              console.log("✅ Upload complete:", res);
               const files = res.map((file) => ({
                 name: file.name,
                 url: file.url, // Using correct UploadThing property
                 type: file.type || "application/octet-stream",
                 size: file.size,
               }));
+              console.log("📁 Processed files:", files);
               onFilesUploaded(files);
               setIsUploading(false);
+              console.log("🎉 Files uploaded successfully!");
             }}
             onUploadError={(error: Error) => {
-              console.error("Upload error:", error);
+              console.error("❌ Upload error:", error);
+              console.error("Error details:", error.message, error.stack);
               setIsUploading(false);
               setUploadError(
                 error.message ||
                   "Please check your UploadThing configuration and environment variables"
               );
             }}
-            onUploadBegin={() => {
+            onUploadBegin={(name) => {
+              console.log("🚀 Starting upload for:", name);
               setIsUploading(true);
               setUploadError(null); // Clear any previous errors
             }}
@@ -120,15 +124,18 @@ export function FileUpload({
               label: "text-neutral-600 dark:text-neutral-400 text-sm",
               allowedContent:
                 "text-neutral-500 dark:text-neutral-500 text-xs mt-1",
-              button: "hidden", // Hide the upload button - auto upload on drop
+              button:
+                "bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium",
             }}
             content={{
               label: isUploading
-                ? "Uploading..."
+                ? "🔄 Uploading files..."
                 : disabled
-                  ? "Upload disabled"
-                  : "Drag files here or click to browse",
-              allowedContent: "Images (4MB), PDFs (16MB), Text files (1MB)",
+                  ? "❌ Upload disabled"
+                  : "📁 Drag & drop files or click to browse",
+              allowedContent:
+                "Images (4MB), PDFs (16MB), Text files (1MB). Click 'Upload' after selecting files.",
+              button: isUploading ? "Uploading..." : "Upload Files",
             }}
           />
         </div>
