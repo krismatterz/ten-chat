@@ -115,6 +115,7 @@ export function Chat({ chatId }: ChatProps) {
     handleSubmit: aiHandleSubmit,
     isLoading,
     setMessages: setAiMessages,
+    reload,
   } = useChat({
     api: "/api/chat",
     body: {
@@ -130,6 +131,17 @@ export function Chat({ chatId }: ChatProps) {
       if (conversationId) {
         try {
           const textContent = message.content || "";
+
+          // Check if this message already exists in Convex to prevent duplicates
+          const existingMessage = messagesData?.find(
+            (msg) => msg.content === textContent && msg.role === "assistant"
+          );
+
+          if (existingMessage) {
+            console.log("⚠️ Message already exists in Convex, skipping save");
+            return;
+          }
+
           await addMessage({
             conversationId,
             role: "assistant",
@@ -156,8 +168,12 @@ export function Chat({ chatId }: ChatProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [aiMessages]);
 
-  // Sync Convex messages with AI messages (AI SDK v4)
+  // Sync Convex messages with AI messages (AI SDK v4) - Prevent infinite loops
   useEffect(() => {
+    console.log(
+      "🔄 Sync effect triggered - messagesData length:",
+      messagesData?.length
+    );
     if (messagesData && messagesData.length > 0) {
       const formattedMessages = messagesData.map((msg) => ({
         id: msg._id,
@@ -166,7 +182,33 @@ export function Chat({ chatId }: ChatProps) {
         // Include attachments for API processing
         attachments: msg.attachments,
       }));
-      setAiMessages(formattedMessages);
+
+      // Only update if messages actually changed to prevent loops
+      setAiMessages((prev) => {
+        // Compare lengths first (quick check)
+        if (prev.length !== formattedMessages.length) {
+          console.log("🔄 Length changed, updating messages");
+          return formattedMessages;
+        }
+
+        // Compare message content (detailed check)
+        const hasChanges = prev.some((prevMsg, index) => {
+          const newMsg = formattedMessages[index];
+          return (
+            !newMsg ||
+            prevMsg.id !== newMsg.id ||
+            prevMsg.content !== newMsg.content
+          );
+        });
+
+        if (hasChanges) {
+          console.log("🔄 Content changed, updating messages");
+        } else {
+          console.log("🔄 No changes detected, keeping current messages");
+        }
+
+        return hasChanges ? formattedMessages : prev;
+      });
     }
   }, [messagesData]); // Remove setAiMessages from dependencies to prevent infinite loop
 
@@ -366,43 +408,65 @@ export function Chat({ chatId }: ChatProps) {
   };
 
   const handleRetryMessage = async (messageIndex: number) => {
-    if (messageIndex === 0) return; // Can't retry first message
+    if (messageIndex === 0 || aiIsLoading) return; // Can't retry first message or when loading
 
     console.log("🔄 Retrying message at index:", messageIndex);
 
-    // Get the user message before this AI message
-    const userMessage = aiMessages[messageIndex - 1];
-    if (!userMessage || userMessage.role !== "user") {
-      console.error("❌ No user message found before AI message to retry");
-      return;
-    }
-
     try {
+      // Get the last user message before the AI response we're retrying
+      const lastUserMessage = aiMessages[messageIndex - 1];
+      if (!lastUserMessage || lastUserMessage.role !== "user") {
+        console.error("No user message found before AI response");
+        return;
+      }
+
       // Remove the AI message we're retrying (keep all messages before it)
       const messagesToKeep = aiMessages.slice(0, messageIndex);
       setAiMessages(messagesToKeep);
 
-      console.log("🔄 Retrying with user message:", userMessage.content);
+      console.log("🔄 Manually triggering new AI response");
 
-      // Temporarily store the original input
-      const originalInput = input;
+      // Create a synthetic form submission to trigger a new AI response
+      const syntheticEvent = {
+        preventDefault: () => {},
+      } as React.FormEvent;
 
-      // Set input to the user's message content
-      handleInputChange({ target: { value: userMessage.content } } as any);
+      // Temporarily set the input to the last user message content
+      const previousInput = input;
+      handleInputChange({
+        target: { value: lastUserMessage.content },
+      } as React.ChangeEvent<HTMLTextAreaElement>);
 
-      // Create a synthetic form event and retry
-      const formEvent = new Event("submit") as any;
-      formEvent.preventDefault = () => {};
+      // Wait a bit for state to update, then submit
+      setTimeout(async () => {
+        try {
+          await aiHandleSubmit(syntheticEvent);
+          // Reset input back to what it was
+          handleInputChange({
+            target: { value: previousInput },
+          } as React.ChangeEvent<HTMLTextAreaElement>);
+        } catch (error) {
+          console.error("Failed to resubmit:", error);
+          // Reset input back to what it was
+          handleInputChange({
+            target: { value: previousInput },
+          } as React.ChangeEvent<HTMLTextAreaElement>);
+        }
+      }, 100);
 
-      // Use the AI SDK's built-in reload/retry functionality
-      await aiHandleSubmit(formEvent);
+      console.log("✅ Message retry initiated successfully");
 
-      // Restore original input after a delay
+      // Show success notification
+      const notification = document.createElement("div");
+      notification.textContent = "🔄 Retrying message...";
+      notification.style.cssText =
+        "position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 8px 16px; border-radius: 8px; z-index: 9999; font-size: 14px;";
+      document.body.appendChild(notification);
       setTimeout(() => {
-        handleInputChange({ target: { value: originalInput } } as any);
-      }, 500);
-
-      console.log("✅ Message retry initiated");
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 2000);
     } catch (error) {
       console.error("❌ Failed to retry message:", error);
       // Show user-friendly error
@@ -517,25 +581,29 @@ export function Chat({ chatId }: ChatProps) {
                       <div className="flex items-center gap-1">
                         {/* Provider Info Icon with Tooltip */}
                         <div className="group relative mr-2">
-                          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-help">
-                            <span className="text-xs font-medium">i</span>
+                          <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 hover:scale-110 transition-all duration-200 cursor-help border border-primary/20">
+                            <span className="text-xs font-bold">i</span>
                           </div>
 
-                          {/* Tooltip */}
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-md border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                            <div className="text-center">
-                              <div className="font-medium">
+                          {/* Tooltip - Positioned Below */}
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-popover/95 backdrop-blur-sm text-popover-foreground text-xs rounded-lg shadow-lg border opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 min-w-[180px]">
+                            {/* Tooltip arrow pointing up */}
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-popover border-l border-t rotate-45 mb-1"></div>
+
+                            <div className="text-center space-y-1">
+                              <div className="font-semibold text-foreground">
                                 {currentProvider?.name}
                               </div>
-                              <div className="text-muted-foreground">
+                              <div className="text-muted-foreground text-[10px] font-mono">
                                 {selectedModel}
                               </div>
-                              <div className="text-muted-foreground">
-                                Streaming • Live
+                              <div className="flex items-center justify-center gap-1 text-green-500">
+                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="text-[10px] font-medium">
+                                  Streaming
+                                </span>
                               </div>
                             </div>
-                            {/* Tooltip arrow */}
-                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-popover border-r border-b rotate-45 -mt-1"></div>
                           </div>
                         </div>
 
@@ -652,7 +720,7 @@ export function Chat({ chatId }: ChatProps) {
                 disabled={
                   (!input.trim() && attachments.length === 0) || aiIsLoading
                 }
-                className="px-4 h-auto py-3 rounded-xl bg-primary/90 hover:bg-primary border-primary/20 backdrop-blur-md transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="px-4 h-12 rounded-xl bg-primary/90 hover:bg-primary border-primary/20 backdrop-blur-md transition-all duration-200 shadow-lg hover:shadow-xl self-end"
               >
                 <Send className="h-4 w-4" />
               </Button>

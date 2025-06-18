@@ -1,7 +1,6 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
 import {
   SidebarProvider,
   SidebarInset,
@@ -15,24 +14,6 @@ interface AuthenticatedLayoutProps {
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const { isLoaded, isSignedIn } = useUser();
-  const [mounted, setMounted] = useState(false);
-
-  // Fix React 19 hydration issues and infinite loops
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Don't render anything until component is mounted (prevents hydration mismatch)
-  if (!mounted) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <span className="text-muted-foreground">Loading...</span>
-        </div>
-      </div>
-    );
-  }
 
   // Show loading state while Clerk is initializing
   if (!isLoaded) {

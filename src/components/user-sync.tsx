@@ -22,7 +22,7 @@ export function UserSync() {
     }
 
     syncUser();
-  }, [isLoaded, user, upsertUser]);
+  }, [isLoaded, user]); // Remove upsertUser from deps to prevent infinite loop
 
   return null; // This component doesn't render anything
 }

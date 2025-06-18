@@ -427,14 +427,47 @@ export function AppSidebar() {
                         }
                         className="flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-sm transition-all duration-200 hover:bg-background/60 focus:outline-none focus:ring-2 focus:ring-sidebar-ring min-h-[60px] backdrop-blur-md border border-border/20 hover:border-border/40 hover:shadow-lg hover:scale-[1.02] bg-background/30"
                       >
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0 group/icons">
                           {conversation.isPinned && (
-                            <Pin className="h-3 w-3 text-sidebar-foreground/70 fill-current" />
+                            <div className="relative group/pin">
+                              <Pin className="h-3 w-3 text-sidebar-foreground/70 fill-current hover:text-sidebar-foreground transition-colors" />
+                              {/* Tooltip for pinned */}
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover/pin:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none">
+                                Pinned conversation
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-popover rotate-45 -mt-1"></div>
+                              </div>
+                            </div>
                           )}
                           {conversation.branchedFrom && (
-                            <GitBranch className="h-3 w-3 text-purple-500" />
+                            <div className="relative group/branch">
+                              <GitBranch className="h-3 w-3 text-purple-500 hover:text-purple-400 transition-colors" />
+                              {/* Tooltip for branched */}
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover/branch:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none">
+                                Branched conversation
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-popover rotate-45 -mt-1"></div>
+                              </div>
+                            </div>
                           )}
-                          <MessageSquare className="h-4 w-4 text-sidebar-foreground/70" />
+                          <div className="relative group/message">
+                            <MessageSquare className="h-4 w-4 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors" />
+                            {/* Tooltip for conversation info */}
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-popover text-popover-foreground text-xs rounded opacity-0 group-hover/message:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 pointer-events-none min-w-[120px]">
+                              <div className="text-center space-y-1">
+                                <div className="font-medium">
+                                  {conversation.title}
+                                </div>
+                                <div className="text-muted-foreground text-[10px]">
+                                  {formatTimestamp(conversation.updatedAt)}
+                                </div>
+                                {conversation.provider && (
+                                  <div className="text-muted-foreground text-[10px] font-mono">
+                                    {conversation.provider}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-popover rotate-45 -mt-1"></div>
+                            </div>
+                          </div>
                         </div>
 
                         <div className="flex-1 overflow-hidden">

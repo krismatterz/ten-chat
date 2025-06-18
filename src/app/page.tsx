@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
 export default function HomePage() {
   const { isSignedIn, isLoaded } = useUser();
   const router = useRouter();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && !hasRedirected.current) {
+      hasRedirected.current = true;
       if (isSignedIn) {
         router.push("/chat");
       } else {
