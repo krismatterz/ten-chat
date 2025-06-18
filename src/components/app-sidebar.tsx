@@ -313,7 +313,7 @@ export function AppSidebar() {
           {title}
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu className="space-y-3">
+          <SidebarMenu className="space-y-4">
             {conversations.map((conversation) => (
               <SidebarMenuItem key={conversation._id}>
                 <ContextMenu>
@@ -333,7 +333,7 @@ export function AppSidebar() {
                         onKeyDown={(e) =>
                           handleConversationKeyDown(e, conversation._id)
                         }
-                        className="flex w-full cursor-pointer items-center gap-3 rounded-md p-3 text-sm transition-colors hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-sidebar-ring min-h-[60px]"
+                        className="flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-sm transition-all duration-200 hover:bg-background/60 focus:outline-none focus:ring-2 focus:ring-sidebar-ring min-h-[60px] backdrop-blur-md border border-border/20 hover:border-border/40 hover:shadow-lg hover:scale-[1.02] bg-background/30"
                       >
                         <div className="flex items-center gap-2 shrink-0">
                           {conversation.isPinned && (
@@ -448,9 +448,18 @@ export function AppSidebar() {
         {/* Logo Section */}
         <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+              <Zap className="h-4 w-4 text-white" />
+            </div>
             <div className="flex flex-col">
-              <span className="font-bold text-sidebar-foreground text-sm">
-                Ten Chat
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sidebar-foreground text-sm">
+                  Ten Chat
+                </span>
+                <BetaBadge />
+              </div>
+              <span className="text-xs text-sidebar-foreground/60">
+                AI Assistant
               </span>
             </div>
           </div>

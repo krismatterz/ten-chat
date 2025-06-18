@@ -28,6 +28,7 @@ import {
   CommandItem,
   CommandList,
 } from "./ui/command";
+import { ThinkingModeSelector } from "./ui/thinking-mode-selector";
 
 interface AIProviderSelectorProps {
   selectedProvider: string;
@@ -292,7 +293,7 @@ export function AIProviderSelector({
           <Button
             variant="outline"
             aria-expanded={open}
-            className="h-8 px-3 text-xs gap-2 border justify-between min-w-[200px]"
+            className="h-8 px-3 text-xs gap-2 border border-border/30 justify-between min-w-[200px] bg-background/60 backdrop-blur-md hover:bg-background/80 hover:border-border/50 transition-all duration-200"
           >
             <div className="flex items-center gap-1.5">
               {getProviderIcon(selectedProvider)}
@@ -313,14 +314,18 @@ export function AIProviderSelector({
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-96 p-0" align="start">
-          <Command>
+        <PopoverContent
+          className="w-96 p-0 bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl"
+          align="start"
+        >
+          <Command className="bg-transparent">
             <CommandInput
               placeholder="Search models..."
               value={searchQuery}
               onValueChange={setSearchQuery}
+              className="bg-transparent border-none"
             />
-            <CommandList className="max-h-[400px]">
+            <CommandList className="max-h-[400px] bg-transparent">
               <CommandEmpty>No models found.</CommandEmpty>
 
               {/* Favorites */}
@@ -465,20 +470,10 @@ export function AIProviderSelector({
 
       {/* Reasoning Level Control */}
       {supportsReasoning(selectedModel) && onReasoningChange && (
-        <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-          <Brain className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-          <select
-            value={reasoningLevel}
-            onChange={(e) =>
-              onReasoningChange(e.target.value as "low" | "mid" | "high")
-            }
-            className="text-xs bg-transparent border-none outline-none text-purple-700 dark:text-purple-300"
-          >
-            <option value="low">Low</option>
-            <option value="mid">Mid</option>
-            <option value="high">High</option>
-          </select>
-        </div>
+        <ThinkingModeSelector
+          reasoningLevel={reasoningLevel}
+          onReasoningChange={onReasoningChange}
+        />
       )}
     </div>
   );

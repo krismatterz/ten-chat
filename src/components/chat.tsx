@@ -37,12 +37,37 @@ interface ChatProps {
 export function Chat({ chatId }: ChatProps) {
   const router = useRouter();
   const [isFirstMessage, setIsFirstMessage] = useState(true);
-  const [selectedProvider, setSelectedProvider] =
-    useState<ProviderType>("anthropic");
-  const [selectedModel, setSelectedModel] =
-    useState<string>("claude-3.5-sonnet");
+
+  // Load persistent AI preferences from localStorage
+  const [selectedProvider, setSelectedProvider] = useState<ProviderType>(() => {
+    if (typeof window !== "undefined") {
+      return (
+        (localStorage.getItem("tenchat-provider") as ProviderType) ||
+        "anthropic"
+      );
+    }
+    return "anthropic";
+  });
+
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("tenchat-model") || "claude-3.5-sonnet";
+    }
+    return "claude-3.5-sonnet";
+  });
+
   const [reasoningLevel, setReasoningLevel] = useState<"low" | "mid" | "high">(
-    "mid"
+    () => {
+      if (typeof window !== "undefined") {
+        return (
+          (localStorage.getItem("tenchat-reasoning") as
+            | "low"
+            | "mid"
+            | "high") || "mid"
+        );
+      }
+      return "mid";
+    }
   );
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [showUpload, setShowUpload] = useState(false);
@@ -257,6 +282,20 @@ export function Chat({ chatId }: ChatProps) {
   const handleProviderChange = (provider: string, model: string) => {
     setSelectedProvider(provider as ProviderType);
     setSelectedModel(model);
+
+    // Save to localStorage for persistence
+    if (typeof window !== "undefined") {
+      localStorage.setItem("tenchat-provider", provider);
+      localStorage.setItem("tenchat-model", model);
+    }
+  };
+
+  // Save reasoning level changes to localStorage
+  const handleReasoningChange = (level: "low" | "mid" | "high") => {
+    setReasoningLevel(level);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("tenchat-reasoning", level);
+    }
   };
 
   // Message Actions
@@ -351,10 +390,10 @@ export function Chat({ chatId }: ChatProps) {
                 )}
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-lg px-4 py-2 group",
+                    "max-w-[80%] rounded-xl px-4 py-3 group backdrop-blur-md border transition-all duration-200",
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card text-card-foreground shadow-sm border"
+                      ? "bg-primary/90 text-primary-foreground border-primary/20 shadow-lg"
+                      : "bg-background/60 text-foreground border-border/30 shadow-sm hover:bg-background/80 hover:border-border/50"
                   )}
                 >
                   {/* Render message content (AI SDK v4) */}
@@ -467,11 +506,11 @@ export function Chat({ chatId }: ChatProps) {
       </div>
 
       {/* Fixed Input Area at Bottom */}
-      <div className="shrink-0 border-t px-6 py-4 bg-background/95 backdrop-blur-sm dub-gradient">
+      <div className="shrink-0 border-t border-border/30 px-6 py-4 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto max-w-3xl space-y-3">
           {/* File Upload Dropdown */}
           {showUpload && (
-            <div className="border rounded-lg p-4 bg-card">
+            <div className="border border-border/30 rounded-xl p-4 bg-background/60 backdrop-blur-md shadow-lg">
               <FileUpload
                 onFilesUploaded={handleFilesUploaded}
                 attachments={attachments}
@@ -507,7 +546,7 @@ export function Chat({ chatId }: ChatProps) {
                 disabled={
                   (!input.trim() && attachments.length === 0) || aiIsLoading
                 }
-                className="px-4 h-auto py-3"
+                className="px-4 h-auto py-3 rounded-xl bg-primary/90 hover:bg-primary border-primary/20 backdrop-blur-md transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -522,7 +561,7 @@ export function Chat({ chatId }: ChatProps) {
                   selectedModel={selectedModel}
                   reasoningLevel={reasoningLevel}
                   onProviderChange={handleProviderChange}
-                  onReasoningChange={setReasoningLevel}
+                  onReasoningChange={handleReasoningChange}
                 />
 
                 {/* Direct File Upload Button - Now rounded and named "Attach" */}
@@ -531,7 +570,7 @@ export function Chat({ chatId }: ChatProps) {
                   variant="outline"
                   size="sm"
                   onClick={handleDirectFileUpload}
-                  className="h-8 w-8 rounded-full p-0"
+                  className="h-8 w-8 rounded-full p-0 bg-background/60 backdrop-blur-md border-border/30 hover:bg-background/80 hover:border-border/50 transition-all duration-200"
                   disabled={aiIsLoading}
                   title="Attach files"
                 >
