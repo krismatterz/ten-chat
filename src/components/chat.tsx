@@ -423,6 +423,11 @@ export function Chat({ chatId }: ChatProps) {
 
   return (
     <div className="flex h-full flex-col relative z-10">
+      {/* Header with Sidebar Toggle */}
+      <div className="flex items-center gap-3 p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 modern-gradient">
+        <SidebarTrigger className="shrink-0" />
+      </div>
+
       {/* Messages - This will take available space and scroll independently */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="mx-auto max-w-3xl space-y-4">
@@ -635,9 +640,6 @@ export function Chat({ chatId }: ChatProps) {
             {/* Controls Row */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                {/* Sidebar Toggle */}
-                <SidebarTrigger className="h-8 w-8 bg-background/60 backdrop-blur-md border-border/30 hover:bg-background/80 hover:border-border/50 transition-all duration-200" />
-
                 {/* AI Provider Selector */}
                 <AIProviderSelector
                   selectedProvider={selectedProvider}

@@ -50,6 +50,7 @@ bun-debug.log
 
 # vercel
 .vercel
+.vercelignore
 
 # typescript
 *.tsbuildinfo

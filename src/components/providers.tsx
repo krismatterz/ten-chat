@@ -13,7 +13,19 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ClerkProvider publishableKey={env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+    <ClerkProvider
+      publishableKey={env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      appearance={{
+        elements: {
+          rootBox: "mx-auto",
+          card: "shadow-2xl border border-border/50 backdrop-blur-xl",
+        },
+        variables: {
+          colorPrimary: "hsl(var(--primary))",
+          colorBackground: "hsl(var(--background))",
+        },
+      }}
+    >
       <ConvexProvider client={convex}>
         <ThemeProvider
           attribute="class"

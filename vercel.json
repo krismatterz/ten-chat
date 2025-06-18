@@ -1,0 +1,8 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "env": {
+    "NEXT_PUBLIC_CONVEX_URL": "https://limitless-canary-898.convex.cloud"
+  }
+}

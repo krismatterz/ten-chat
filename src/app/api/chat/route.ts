@@ -121,6 +121,9 @@ export async function POST(req: Request) {
       attachments,
     } = await req.json();
 
+    console.log("API Route - Provider:", provider, "Model:", model);
+    console.log("Messages count:", messages?.length);
+
     if (!messages || !Array.isArray(messages)) {
       return new Response("Invalid messages format", { status: 400 });
     }

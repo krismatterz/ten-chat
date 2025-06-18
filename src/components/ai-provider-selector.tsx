@@ -339,7 +339,7 @@ export function AIProviderSelector({
                     <CommandItem
                       key={`${model.provider}-${model.id}`}
                       value={`${model.displayName} ${model.providerName}`}
-                      onSelect={(currentValue) => {
+                      onSelect={(currentValue: string) => {
                         console.log(
                           "Favorite model selected:",
                           model.id,
@@ -412,7 +412,7 @@ export function AIProviderSelector({
                     <CommandItem
                       key={`${model.provider}-${model.id}`}
                       value={`${model.displayName} ${model.providerName}`}
-                      onSelect={(currentValue) => {
+                      onSelect={(currentValue: string) => {
                         console.log(
                           "Model selected:",
                           model.id,
