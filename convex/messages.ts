@@ -6,29 +6,24 @@ import { getCurrentUser, requireUser } from "./auth";
 export const add = mutation({
   args: {
     conversationId: v.id("conversations"),
-    role: v.union(
-      v.literal("user"),
-      v.literal("assistant"),
-      v.literal("system")
-    ),
+    role: v.string(),
     content: v.string(),
     model: v.optional(v.string()),
     provider: v.optional(v.string()),
-    tokens: v.optional(v.number()),
     attachments: v.optional(
       v.array(
         v.object({
           name: v.string(),
-          url: v.string(),
+          size: v.float64(),
           type: v.string(),
-          size: v.number(),
+          url: v.string(),
         })
       )
     ),
   },
   handler: async (
     ctx,
-    { conversationId, role, content, model, provider, tokens, attachments }
+    { conversationId, role, content, model, provider, attachments }
   ) => {
     const user = await requireUser(ctx);
 
@@ -48,7 +43,6 @@ export const add = mutation({
       timestamp,
       model,
       provider,
-      tokens,
       attachments,
     });
 
@@ -134,78 +128,6 @@ export const search = query({
         };
       })
     );
-  },
-});
-
-// Add or toggle a reaction to a message
-export const addReaction = mutation({
-  args: {
-    messageId: v.id("messages"),
-    emoji: v.string(),
-  },
-  handler: async (ctx, { messageId, emoji }) => {
-    const user = await requireUser(ctx);
-
-    const message = await ctx.db.get(messageId);
-    if (!message) {
-      throw new Error("Message not found");
-    }
-
-    // Verify user has access to this conversation
-    const conversation = await ctx.db.get(message.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
-      throw new Error("Not authorized");
-    }
-
-    const reactions = message.reactions || [];
-
-    // Check if user already reacted with this emoji
-    const existingReactionIndex = reactions.findIndex(
-      (r) => r.userId === user._id && r.emoji === emoji
-    );
-
-    if (existingReactionIndex >= 0) {
-      // Remove existing reaction (toggle off)
-      reactions.splice(existingReactionIndex, 1);
-    } else {
-      // Add new reaction
-      reactions.push({
-        emoji,
-        userId: user._id,
-        timestamp: Date.now(),
-      });
-    }
-
-    await ctx.db.patch(messageId, { reactions });
-  },
-});
-
-// Remove a reaction from a message
-export const removeReaction = mutation({
-  args: {
-    messageId: v.id("messages"),
-    emoji: v.string(),
-  },
-  handler: async (ctx, { messageId, emoji }) => {
-    const user = await requireUser(ctx);
-
-    const message = await ctx.db.get(messageId);
-    if (!message) {
-      throw new Error("Message not found");
-    }
-
-    // Verify user has access to this conversation
-    const conversation = await ctx.db.get(message.conversationId);
-    if (!conversation || conversation.userId !== user._id) {
-      throw new Error("Not authorized");
-    }
-
-    const reactions = message.reactions || [];
-    const filteredReactions = reactions.filter(
-      (r) => !(r.userId === user._id && r.emoji === emoji)
-    );
-
-    await ctx.db.patch(messageId, { reactions: filteredReactions });
   },
 });
 

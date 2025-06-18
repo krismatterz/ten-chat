@@ -78,7 +78,6 @@ export function Chat({ chatId }: ChatProps) {
   // Convex hooks
   const createConversation = useMutation(api.conversations.create);
   const addMessage = useMutation(api.messages.add);
-  const addReaction = useMutation(api.messages.addReaction);
   const autoRename = useMutation(api.conversations.autoRename);
   const branchConversation = useMutation(api.conversations.branch);
 
@@ -127,12 +126,10 @@ export function Chat({ chatId }: ChatProps) {
     },
     onFinish: async (message) => {
       console.log("🎯 onFinish called with:", message.id);
-      // Save AI response to Convex
+      // Save AI response to Convex (user messages are saved in handleSendMessage)
       if (conversationId) {
         try {
-          // Extract text content from message
           const textContent = message.content || "";
-
           await addMessage({
             conversationId,
             role: "assistant",
@@ -140,9 +137,9 @@ export function Chat({ chatId }: ChatProps) {
             model: selectedModel,
             provider: selectedProvider,
           });
-          console.log("✅ Message saved to Convex");
+          console.log("✅ AI message saved to Convex");
         } catch (error) {
-          console.error("❌ Failed to save message to Convex:", error);
+          console.error("❌ Failed to save AI message to Convex:", error);
         }
       }
     },
@@ -224,22 +221,7 @@ export function Chat({ chatId }: ChatProps) {
         window.history.pushState({}, "", `/chat/${convId}`);
       }
 
-      // Create user message with attachments for AI
-      const userMessage = {
-        id: `temp-${Date.now()}`, // Temporary ID
-        role: "user" as const,
-        content:
-          input ||
-          (attachments.length > 0
-            ? "I've shared some files with you. Please analyze them."
-            : ""),
-        attachments: attachments.length > 0 ? attachments : undefined,
-      };
-
-      // Add user message to AI messages immediately
-      setAiMessages((prev) => [...prev, userMessage]);
-
-      // Save user message to Convex with attachments
+      // Save user message to Convex with attachments (AI SDK will handle the UI)
       await addMessage({
         conversationId: convId,
         role: "user",
@@ -286,14 +268,6 @@ export function Chat({ chatId }: ChatProps) {
 
   const handleRemoveAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleReaction = async (messageId: string, emoji: string) => {
-    try {
-      await addReaction({ messageId: messageId as any, emoji });
-    } catch (error) {
-      console.error("Failed to add reaction:", error);
-    }
   };
 
   const handleProviderChange = (provider: string, model: string) => {
@@ -394,39 +368,55 @@ export function Chat({ chatId }: ChatProps) {
   const handleRetryMessage = async (messageIndex: number) => {
     if (messageIndex === 0) return; // Can't retry first message
 
+    console.log("🔄 Retrying message at index:", messageIndex);
+
     // Get the user message before this AI message
     const userMessage = aiMessages[messageIndex - 1];
-    if (!userMessage || userMessage.role !== "user") return;
+    if (!userMessage || userMessage.role !== "user") {
+      console.error("❌ No user message found before AI message to retry");
+      return;
+    }
 
-    // Remove all messages from this point forward (including the AI message we're retrying)
-    const messagesToKeep = aiMessages.slice(0, messageIndex);
-    setAiMessages(messagesToKeep);
-
-    // Use AI SDK's reload method to regenerate the last response
     try {
+      // Remove the AI message we're retrying (keep all messages before it)
+      const messagesToKeep = aiMessages.slice(0, messageIndex);
+      setAiMessages(messagesToKeep);
+
+      console.log("🔄 Retrying with user message:", userMessage.content);
+
       // Temporarily store the original input
       const originalInput = input;
 
-      // Set the input to the user's message content to retry with same prompt
+      // Set input to the user's message content
       handleInputChange({ target: { value: userMessage.content } } as any);
 
-      // Create a proper form submission event
-      const syntheticEvent = {
-        preventDefault: () => {},
-        type: "submit",
-      } as React.FormEvent;
+      // Create a synthetic form event and retry
+      const formEvent = new Event("submit") as any;
+      formEvent.preventDefault = () => {};
 
-      // Submit the form which will trigger the AI response
-      await aiHandleSubmit(syntheticEvent);
+      // Use the AI SDK's built-in reload/retry functionality
+      await aiHandleSubmit(formEvent);
 
-      // Clear the input after submission
+      // Restore original input after a delay
       setTimeout(() => {
         handleInputChange({ target: { value: originalInput } } as any);
-      }, 100);
+      }, 500);
+
+      console.log("✅ Message retry initiated");
     } catch (error) {
-      console.error("Failed to retry message:", error);
-      // Restore the original messages if retry failed
-      setAiMessages(aiMessages);
+      console.error("❌ Failed to retry message:", error);
+      // Show user-friendly error
+      const notification = document.createElement("div");
+      notification.textContent =
+        "❌ Failed to retry message. Please try again.";
+      notification.style.cssText =
+        "position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 8px 16px; border-radius: 8px; z-index: 9999; font-size: 14px;";
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
     }
   };
 
@@ -525,9 +515,29 @@ export function Chat({ chatId }: ChatProps) {
                     </p>
                     {msg.role === "assistant" && (
                       <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground text-xs mr-2">
-                          {selectedProvider}
-                        </span>
+                        {/* Provider Info Icon with Tooltip */}
+                        <div className="group relative mr-2">
+                          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-help">
+                            <span className="text-xs font-medium">i</span>
+                          </div>
+
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-md border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                            <div className="text-center">
+                              <div className="font-medium">
+                                {currentProvider?.name}
+                              </div>
+                              <div className="text-muted-foreground">
+                                {selectedModel}
+                              </div>
+                              <div className="text-muted-foreground">
+                                Streaming • Live
+                              </div>
+                            </div>
+                            {/* Tooltip arrow */}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-popover border-r border-b rotate-45 -mt-1"></div>
+                          </div>
+                        </div>
 
                         {/* Message Actions */}
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

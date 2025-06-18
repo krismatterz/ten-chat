@@ -71,13 +71,10 @@ async function processMessageContent(message: any) {
     const { type, url, name } = attachment;
 
     if (type.startsWith("image/")) {
-      // Handle images - use URL source for AI SDK v4
+      // Handle images - AI SDK v4 format for vision models
       contentParts.push({
         type: "image",
-        source: {
-          type: "url",
-          url: url,
-        },
+        image: url,
       });
     } else if (type === "text/plain" || type.startsWith("text/")) {
       // Handle text files - fetch content and include as text

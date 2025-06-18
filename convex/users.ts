@@ -137,25 +137,7 @@ export const remove = mutation({
       await ctx.db.delete(conversation._id);
     }
 
-    // Delete all files for this user
-    const files = await ctx.db
-      .query("files")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-
-    for (const file of files) {
-      await ctx.db.delete(file._id);
-    }
-
-    // Delete user settings
-    const settings = await ctx.db
-      .query("settings")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-
-    if (settings) {
-      await ctx.db.delete(settings._id);
-    }
+    // Note: Files and settings tables removed from schema
 
     // Finally delete the user
     await ctx.db.delete(userId);

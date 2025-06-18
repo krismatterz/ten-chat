@@ -43,8 +43,8 @@ export const get = query({
 export const create = mutation({
   args: {
     title: v.string(),
-    model: v.optional(v.string()),
-    provider: v.optional(v.string()),
+    model: v.string(),
+    provider: v.string(),
   },
   handler: async (ctx, { title, model, provider }) => {
     const user = await requireUser(ctx);
@@ -55,8 +55,8 @@ export const create = mutation({
       userId: user._id,
       createdAt: now,
       updatedAt: now,
-      model,
-      provider,
+      model: model || "claude-3-5-sonnet",
+      provider: provider || "anthropic",
     });
   },
 });
@@ -259,7 +259,6 @@ export const branch = mutation({
         timestamp: message.timestamp,
         model: message.model,
         provider: message.provider,
-        tokens: message.tokens,
         attachments: message.attachments,
       });
     }
