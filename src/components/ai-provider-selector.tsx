@@ -1,32 +1,33 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import {
+  AlertTriangle,
+  Bot,
+  Brain,
+  Check,
   ChevronDown,
   ChevronUp,
-  Zap,
-  Heart,
-  Brain,
-  Search,
   Eye,
-  Globe,
   FileText,
-  Check,
+  Globe,
+  Heart,
+  Search,
   Sparkles,
-  Bot,
-  AlertTriangle,
+  Zap,
 } from "lucide-react";
-import { Button } from "./ui/button";
+import { useMemo, useState } from "react";
+import { type AIProvider, AI_PROVIDERS } from "~/lib/providers";
 import { cn } from "~/lib/utils";
-import { AI_PROVIDERS, type AIProvider } from "~/lib/providers";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Button } from "./ui/button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
+  CommandItem,
   CommandList,
 } from "./ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { ThinkingModeSelector } from "./ui/thinking-mode-selector";
 
 interface AIProviderSelectorProps {
@@ -270,7 +271,6 @@ export function AIProviderSelector({
   onReasoningChange,
 }: AIProviderSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<string[]>(USER_FAVORITES);
 
   const currentProvider = AI_PROVIDERS.find((p) => p.id === selectedProvider);
@@ -295,20 +295,15 @@ export function AIProviderSelector({
 
   // Filter and organize models
   const organizedModels = useMemo(() => {
-    const filtered = allModels.filter(
-      (model) =>
-        model.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        model.providerName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const favoriteModels = filtered.filter((model) => model.isFavorited);
-    const otherModels = filtered.filter((model) => !model.isFavorited);
+    // Don't filter here - let Command component handle search
+    const favoriteModels = allModels.filter((model) => model.isFavorited);
+    const otherModels = allModels.filter((model) => !model.isFavorited);
 
     return {
       favorites: favoriteModels,
       others: otherModels,
     };
-  }, [allModels, searchQuery]);
+  }, [allModels, favorites]);
 
   const toggleFavorite = (modelId: string) => {
     setFavorites((prev) =>
@@ -326,8 +321,7 @@ export function AIProviderSelector({
       onProviderChange(provider, model);
       console.log("✅ onProviderChange called successfully");
       setOpen(false);
-      setSearchQuery(""); // Clear search when selecting
-      console.log("✅ Modal closed and search cleared");
+      console.log("✅ Modal closed");
     } catch (error) {
       console.error("❌ Error in handleModelSelect:", error);
     }
@@ -378,8 +372,6 @@ export function AIProviderSelector({
           <Command className="bg-transparent">
             <CommandInput
               placeholder="Search models..."
-              value={searchQuery}
-              onValueChange={setSearchQuery}
               className="bg-transparent border-none"
             />
             <CommandList className="max-h-[400px] bg-transparent">
@@ -389,9 +381,10 @@ export function AIProviderSelector({
               {organizedModels.favorites.length > 0 && (
                 <CommandGroup heading="⭐ Favorites">
                   {organizedModels.favorites.map((model) => (
-                    <div
+                    <CommandItem
                       key={`${model.provider}-${model.id}`}
-                      onClick={() => {
+                      value={`${model.displayName} ${model.providerName} ${model.id}`}
+                      onSelect={() => {
                         console.log(
                           "Favorite model selected:",
                           model.id,
@@ -399,7 +392,7 @@ export function AIProviderSelector({
                         );
                         handleModelSelect(model.provider, model.id);
                       }}
-                      className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm"
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-sm"
                     >
                       <div className="flex-shrink-0">
                         {getProviderIcon(model.provider)}
@@ -444,6 +437,30 @@ export function AIProviderSelector({
                         ))}
                       </div>
 
+                      {/* Favorite Toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(model.id);
+                        }}
+                        className="p-1 hover:bg-muted rounded transition-colors"
+                        title={
+                          model.isFavorited
+                            ? "Remove from favorites"
+                            : "Add to favorites"
+                        }
+                      >
+                        <Heart
+                          className={cn(
+                            "h-3 w-3 transition-colors",
+                            model.isFavorited
+                              ? "fill-red-500 text-red-500"
+                              : "text-muted-foreground hover:text-red-500"
+                          )}
+                        />
+                      </button>
+
                       <Check
                         className={cn(
                           "ml-2 h-4 w-4",
@@ -452,7 +469,7 @@ export function AIProviderSelector({
                             : "opacity-0"
                         )}
                       />
-                    </div>
+                    </CommandItem>
                   ))}
                 </CommandGroup>
               )}
@@ -461,9 +478,10 @@ export function AIProviderSelector({
               {organizedModels.others.length > 0 && (
                 <CommandGroup heading="🤖 All Models">
                   {organizedModels.others.map((model) => (
-                    <div
+                    <CommandItem
                       key={`${model.provider}-${model.id}`}
-                      onClick={() => {
+                      value={`${model.displayName} ${model.providerName} ${model.id}`}
+                      onSelect={() => {
                         console.log(
                           "Model selected:",
                           model.id,
@@ -471,7 +489,7 @@ export function AIProviderSelector({
                         );
                         handleModelSelect(model.provider, model.id);
                       }}
-                      className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm"
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer rounded-sm"
                     >
                       <div className="flex-shrink-0">
                         {getProviderIcon(model.provider)}
@@ -516,6 +534,30 @@ export function AIProviderSelector({
                         ))}
                       </div>
 
+                      {/* Favorite Toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(model.id);
+                        }}
+                        className="p-1 hover:bg-muted rounded transition-colors"
+                        title={
+                          model.isFavorited
+                            ? "Remove from favorites"
+                            : "Add to favorites"
+                        }
+                      >
+                        <Heart
+                          className={cn(
+                            "h-3 w-3 transition-colors",
+                            model.isFavorited
+                              ? "fill-red-500 text-red-500"
+                              : "text-muted-foreground hover:text-red-500"
+                          )}
+                        />
+                      </button>
+
                       <Check
                         className={cn(
                           "ml-2 h-4 w-4",
@@ -524,7 +566,7 @@ export function AIProviderSelector({
                             : "opacity-0"
                         )}
                       />
-                    </div>
+                    </CommandItem>
                   ))}
                 </CommandGroup>
               )}

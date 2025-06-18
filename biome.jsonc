@@ -1,13 +1,21 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "vcs": {
-    "enabled": false,
+    "enabled": true,
     "clientKind": "git",
-    "useIgnoreFile": false,
+    "useIgnoreFile": true,
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": [],
+    "ignore": [
+      ".next/**",
+      "node_modules/**",
+      "convex/_generated/**",
+      "*.min.js",
+      "dist/**",
+      "build/**",
+    ],
+    "maxSize": 2097152,
   },
   "formatter": {
     "enabled": true,
@@ -31,8 +39,11 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "nursery": {
-        "useSortedClasses": "off",
+      "suspicious": {
+        "noExplicitAny": "warn",
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn",
       },
     },
     "ignore": [

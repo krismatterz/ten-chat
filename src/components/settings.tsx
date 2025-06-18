@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import {
-  Settings as SettingsIcon,
-  User,
-  Bot,
-  Palette,
-  Shield,
   Bell,
+  Bot,
   Database,
-  Zap,
-  Moon,
-  Sun,
   Monitor,
-  Save,
+  Moon,
+  Palette,
   RotateCcw,
+  Save,
+  Settings as SettingsIcon,
+  Shield,
+  Sun,
+  User,
+  Zap,
 } from "lucide-react";
+import { useState } from "react";
 import { AI_PROVIDERS, type ProviderType } from "~/lib/providers";
 import { cn } from "~/lib/utils";
 import { Button } from "./ui/button";
@@ -27,7 +27,6 @@ interface UserSettings {
   notifications: boolean;
   dataRetention: number; // days
   autoArchive: boolean;
-  streamingSpeed: "fast" | "normal" | "slow";
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -37,7 +36,6 @@ const DEFAULT_SETTINGS: UserSettings = {
   notifications: true,
   dataRetention: 30,
   autoArchive: false,
-  streamingSpeed: "normal",
 };
 
 export function Settings() {
@@ -169,36 +167,6 @@ export function Settings() {
                     </div>
                   </div>
                 </div>
-
-                <div className="bg-card/50 backdrop-blur-sm border rounded-lg p-6">
-                  <h3 className="text-lg font-medium text-foreground mb-4">
-                    Performance
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label
-                        htmlFor="streamingSpeed"
-                        className="block text-sm font-medium text-foreground mb-2"
-                      >
-                        Streaming Speed
-                      </label>
-                      <select
-                        value={settings.streamingSpeed}
-                        onChange={(e) =>
-                          updateSetting(
-                            "streamingSpeed",
-                            e.target.value as unknown
-                          )
-                        }
-                        className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
-                      >
-                        <option value="fast">Fast (Low latency)</option>
-                        <option value="normal">Normal (Balanced)</option>
-                        <option value="slow">Slow (High quality)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -206,73 +174,151 @@ export function Settings() {
               <div className="space-y-6">
                 <div className="bg-card/50 backdrop-blur-sm border rounded-lg p-6">
                   <h3 className="text-lg font-medium text-foreground mb-4">
-                    Default AI Provider
+                    Default AI Provider & Model
                   </h3>
-                  <div className="space-y-4">
+                  <div className="space-y-6">
+                    {/* AI Provider Selector */}
                     <div>
-                      <label
-                        htmlFor="defaultProvider"
-                        className="block text-sm font-medium text-foreground mb-2"
-                      >
-                        Provider
-                      </label>
-                      <select
-                        value={settings.defaultProvider}
-                        onChange={(e) => {
-                          const provider = e.target.value as ProviderType;
-                          updateSetting("defaultProvider", provider);
-                          const newProvider = AI_PROVIDERS.find(
-                            (p) => p.id === provider
-                          );
-                          if (newProvider?.models[0]) {
-                            updateSetting(
-                              "defaultModel",
-                              newProvider.models[0]
-                            );
-                          }
-                        }}
-                        className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
-                      >
-                        {AI_PROVIDERS.map((provider) => (
-                          <option key={provider.id} value={provider.id}>
-                            {provider.name}
-                          </option>
-                        ))}
-                      </select>
+                      <span className="block text-sm font-medium text-foreground mb-3">
+                        AI Provider & Model
+                      </span>
+                      <div className="bg-background/50 border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                              <Bot className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">
+                                {currentProvider?.name || "No Provider"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {settings.defaultModel || "No Model Selected"}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              /* TODO: Open model selector modal */
+                            }}
+                            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                          >
+                            Change Model
+                          </button>
+                        </div>
+
+                        {/* Provider Info */}
+                        {currentProvider && (
+                          <div className="pt-3 border-t border-border/50">
+                            <p className="text-sm text-muted-foreground">
+                              {currentProvider.description}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
+                    {/* Quick Model Selection */}
                     <div>
-                      <label
-                        htmlFor="defaultModel"
-                        className="block text-sm font-medium text-foreground mb-2"
-                      >
-                        Default Model
-                      </label>
-                      <select
-                        value={settings.defaultModel}
-                        onChange={(e) =>
-                          updateSetting("defaultModel", e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
-                      >
-                        {currentProvider?.models.map((model) => (
-                          <option key={model} value={model}>
-                            {model}
-                          </option>
+                      <span className="block text-sm font-medium text-foreground mb-3">
+                        Quick Select Popular Models
+                      </span>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          {
+                            provider: "anthropic",
+                            model: "claude-3.5-sonnet",
+                            name: "Claude 3.5 Sonnet",
+                            description: "Best overall",
+                          },
+                          {
+                            provider: "anthropic",
+                            model: "claude-4-sonnet-20250522",
+                            name: "Claude 4 Sonnet",
+                            description: "Latest & most capable",
+                            badge: "NEW",
+                          },
+                          {
+                            provider: "openai",
+                            model: "gpt-4o",
+                            name: "GPT-4o",
+                            description: "Fast & versatile",
+                          },
+                          {
+                            provider: "openai",
+                            model: "o3-mini-2025-01-31",
+                            name: "o3 Mini",
+                            description: "Advanced reasoning",
+                            badge: "REASONING",
+                          },
+                        ].map((quickModel) => (
+                          <button
+                            key={`${quickModel.provider}-${quickModel.model}`}
+                            type="button"
+                            onClick={() => {
+                              updateSetting(
+                                "defaultProvider",
+                                quickModel.provider as ProviderType
+                              );
+                              updateSetting("defaultModel", quickModel.model);
+                            }}
+                            className={cn(
+                              "p-4 border rounded-lg text-left transition-all hover:shadow-md",
+                              settings.defaultProvider ===
+                                quickModel.provider &&
+                                settings.defaultModel === quickModel.model
+                                ? "border-primary bg-primary/10 shadow-sm"
+                                : "border-input hover:bg-accent"
+                            )}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-medium text-sm">
+                                {quickModel.name}
+                              </h4>
+                              {quickModel.badge && (
+                                <span
+                                  className={cn(
+                                    "px-1.5 py-0.5 text-xs font-medium rounded",
+                                    quickModel.badge === "NEW" &&
+                                      "bg-green-500/20 text-green-600 dark:text-green-400",
+                                    quickModel.badge === "REASONING" &&
+                                      "bg-purple-500/20 text-purple-600 dark:text-purple-400"
+                                  )}
+                                >
+                                  {quickModel.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {quickModel.description}
+                            </p>
+                          </button>
                         ))}
-                      </select>
+                      </div>
                     </div>
 
-                    <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Bot className="h-5 w-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-foreground">
-                            Provider Information
-                          </p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {currentProvider?.description}
-                          </p>
+                    {/* Advanced Settings */}
+                    <div>
+                      <span className="block text-sm font-medium text-foreground mb-3">
+                        Advanced Settings
+                      </span>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              Always use fastest streaming
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Optimized for best performance and lowest latency
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-green-500" />
+                            <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                              Enabled
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
