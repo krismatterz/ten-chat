@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     }
 
     // Select provider and model
-    let aiProvider;
+    let aiProvider: any;
     let selectedModel: string;
 
     switch (provider) {
@@ -53,8 +53,8 @@ export async function POST(req: Request) {
     // Create the streaming response
     const result = await streamText({
       model: aiProvider(selectedModel),
-      messages: messages.map((msg: any) => ({
-        role: msg.role,
+      messages: messages.map((msg: { role: string; content: string }) => ({
+        role: msg.role as "user" | "assistant" | "system" | "tool",
         content: msg.content,
       })),
       system:

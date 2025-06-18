@@ -141,7 +141,7 @@ export function Chat({ chatId }: ChatProps) {
   return (
     <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-900">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-800">
+      <header className="flex  items-center border-b justify-between border-neutral-200 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-800">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
             <Bot className="h-4 w-4" />
@@ -164,7 +164,7 @@ export function Chat({ chatId }: ChatProps) {
                   | "groq";
                 setSelectedProvider(provider);
                 const newProvider = providers.find((p) => p.id === provider);
-                if (newProvider && newProvider.models[0]) {
+                if (newProvider?.models[0]) {
                   setSelectedModel(newProvider.models[0]);
                 }
               }}
@@ -190,7 +190,7 @@ export function Chat({ chatId }: ChatProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-neutral-500">Demo User</span>
+            <span className="text-neutral-500 text-sm ">Demo User</span>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-300 dark:bg-neutral-600">
               <User className="h-4 w-4" />
             </div>
@@ -212,7 +212,7 @@ export function Chat({ chatId }: ChatProps) {
                   Type a message below to begin chatting with{" "}
                   {currentProvider?.name} AI.
                 </p>
-                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-neutral-400">
+                <div className="mt-4 flex items-center justify-center gap-2 text-neutral-400 text-sm">
                   <Zap className="h-4 w-4" />
                   <span>
                     Powered by {currentProvider?.name} • {selectedModel}
@@ -255,7 +255,7 @@ export function Chat({ chatId }: ChatProps) {
                       {formatTimestamp(Date.now())}
                     </p>
                     {msg.role === "assistant" && (
-                      <span className="text-xs text-neutral-400">
+                      <span className="text-neutral-400 text-xs">
                         {selectedProvider}
                       </span>
                     )}
@@ -272,17 +272,17 @@ export function Chat({ chatId }: ChatProps) {
 
           {/* Loading indicator */}
           {aiIsLoading && (
-            <div className="flex gap-3 justify-start">
+            <div className="flex justify-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
                 <Bot className="h-4 w-4" />
               </div>
-              <div className="bg-white text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-neutral-100 max-w-[80%] rounded-lg px-4 py-2">
+              <div className="max-w-[80%] rounded-lg bg-white px-4 py-2 text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-neutral-100">
                 <div className="flex items-center gap-2">
                   <div className="animate-pulse">Thinking...</div>
                   <div className="flex gap-1">
-                    <div className="w-1 h-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-1 h-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-1 h-1 bg-neutral-400 rounded-full animate-bounce"></div>
+                    <div className="h-1 w-1 animate-bounce rounded-full bg-neutral-400 [animation-delay:-0.3s]" />
+                    <div className="h-1 w-1 animate-bounce rounded-full bg-neutral-400 [animation-delay:-0.15s]" />
+                    <div className="h-1 w-1 animate-bounce rounded-full bg-neutral-400" />
                   </div>
                 </div>
               </div>
@@ -294,7 +294,7 @@ export function Chat({ chatId }: ChatProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-neutral-200 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-800">
+      <div className="border-t px-6 py-4 border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-800">
         <div className="mx-auto max-w-3xl">
           <form onSubmit={handleSendMessage} className="flex gap-3">
             <div className="relative flex-1">
@@ -315,7 +315,7 @@ export function Chat({ chatId }: ChatProps) {
               <button
                 type="submit"
                 disabled={!input.trim() || aiIsLoading}
-                className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:bg-neutral-400"
+                className="flex absolute bottom-2 right-2 h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:bg-neutral-400"
               >
                 <Send className="h-4 w-4" />
               </button>
