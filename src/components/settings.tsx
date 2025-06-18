@@ -45,7 +45,7 @@ export function Settings() {
   const [activeSection, setActiveSection] = useState("general");
   const [hasChanges, setHasChanges] = useState(false);
 
-  const updateSetting = (key: keyof UserSettings, value: any) => {
+  const updateSetting = (key: keyof UserSettings, value: unknown) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
@@ -89,6 +89,7 @@ export function Settings() {
             const Icon = section.icon;
             return (
               <button
+                type="button"
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
@@ -175,13 +176,19 @@ export function Settings() {
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label
+                        htmlFor="streamingSpeed"
+                        className="block text-sm font-medium text-foreground mb-2"
+                      >
                         Streaming Speed
                       </label>
                       <select
                         value={settings.streamingSpeed}
                         onChange={(e) =>
-                          updateSetting("streamingSpeed", e.target.value as any)
+                          updateSetting(
+                            "streamingSpeed",
+                            e.target.value as unknown
+                          )
                         }
                         className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
                       >
@@ -203,7 +210,10 @@ export function Settings() {
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label
+                        htmlFor="defaultProvider"
+                        className="block text-sm font-medium text-foreground mb-2"
+                      >
                         Provider
                       </label>
                       <select
@@ -232,7 +242,10 @@ export function Settings() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label
+                        htmlFor="defaultModel"
+                        className="block text-sm font-medium text-foreground mb-2"
+                      >
                         Default Model
                       </label>
                       <select
@@ -283,9 +296,10 @@ export function Settings() {
                       const Icon = theme.icon;
                       return (
                         <button
+                          type="button"
                           key={theme.value}
                           onClick={() =>
-                            updateSetting("theme", theme.value as any)
+                            updateSetting("theme", theme.value as unknown)
                           }
                           className={cn(
                             "p-4 border rounded-lg text-center transition-colors",
@@ -312,7 +326,10 @@ export function Settings() {
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label
+                        htmlFor="dataRetention"
+                        className="block text-sm font-medium text-foreground mb-2"
+                      >
                         Data Retention (days)
                       </label>
                       <select
@@ -320,7 +337,7 @@ export function Settings() {
                         onChange={(e) =>
                           updateSetting(
                             "dataRetention",
-                            parseInt(e.target.value)
+                            Number.parseInt(e.target.value)
                           )
                         }
                         className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground"
@@ -343,6 +360,7 @@ export function Settings() {
                         </p>
                       </div>
                       <button
+                        type="button"
                         onClick={() =>
                           updateSetting("autoArchive", !settings.autoArchive)
                         }
@@ -383,6 +401,7 @@ export function Settings() {
                         </p>
                       </div>
                       <button
+                        type="button"
                         onClick={() =>
                           updateSetting(
                             "notifications",

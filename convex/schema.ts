@@ -19,6 +19,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     isArchived: v.optional(v.boolean()),
+    isPinned: v.optional(v.boolean()),
     model: v.optional(v.string()),
     provider: v.optional(v.string()),
   })

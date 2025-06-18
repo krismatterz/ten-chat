@@ -197,7 +197,7 @@ export function Chat({ chatId }: ChatProps) {
   const popularEmojis = ["👍", "❤️", "😊", "😮", "😢", "😡"];
 
   return (
-    <div className="flex h-full flex-col dia-gradient">
+    <div className="flex flex-1 flex-col">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="mx-auto max-w-3xl space-y-4">

@@ -4,21 +4,17 @@
  * Modern Sidebar Component for Ten Chat
  *
  * Layout Strategy:
- * - Uses a fixed width for the icon section (70px) that remains constant
- * - Text content appears to the right of the icons when expanded
- * - Icons maintain their position when sidebar collapses/expands
- *
- * Key measurements:
- * - Collapsed width: 70px (icon section only)
- * - Expanded width: 240px (icon section + content)
- * - Icon container: 38px (fixed width for consistent positioning)
+ * - Navigation items at the top
+ * - Search functionality
+ * - Conversations list
+ * - Clean collapsed state with just icons
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
-import { cn, formatTimestamp, generateChatTitle } from "~/lib/utils";
+import { cn } from "~/lib/utils";
 import { Button } from "./ui/button";
 import { BetaBadge } from "./ui/beta-badge";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,6 +29,7 @@ import {
   Archive,
   Clock,
   FileText,
+  Bot,
 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import { ThemeToggle } from "./ui/theme-toggle";
@@ -159,7 +156,7 @@ export function Sidebar({ currentChatId }: SidebarProps) {
       <div
         className={cn(
           "bg-background/95 supports-[backdrop-filter]:bg-background/60 relative h-full rounded-xl border shadow-lg backdrop-blur transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-[70px]" : "w-[240px]"
+          isCollapsed ? "w-[70px]" : "w-[280px]"
         )}
       >
         <div className="flex h-full flex-col">
@@ -167,7 +164,7 @@ export function Sidebar({ currentChatId }: SidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="bg-background absolute -right-3 top-12 h-6 w-6 rounded-full border shadow-sm"
+            className="bg-background absolute -right-3 top-12 h-6 w-6 rounded-full border shadow-sm z-50"
             onClick={() => handleCollapse(!isCollapsed)}
           >
             <AnimatePresence initial={false} mode="wait">
@@ -195,7 +192,7 @@ export function Sidebar({ currentChatId }: SidebarProps) {
               )}
             >
               {isCollapsed ? (
-                <MessageSquare className="h-5 w-5 text-primary" />
+                <Bot className="h-5 w-5 text-primary" />
               ) : (
                 <>
                   <AnimatePresence initial={false}>
@@ -255,64 +252,169 @@ export function Sidebar({ currentChatId }: SidebarProps) {
             </Button>
           </div>
 
-          {/* Search Section */}
-          {!isCollapsed && (
-            <motion.div
-              className="px-4 pb-4 border-b space-y-3"
-              initial={false}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Search Mode Toggle */}
-              <div className="flex rounded-lg bg-secondary p-1">
-                <button
-                  onClick={() => setSearchMode("conversations")}
-                  className={cn(
-                    "flex-1 px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                    searchMode === "conversations"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Chats
-                </button>
-                <button
-                  onClick={() => setSearchMode("messages")}
-                  className={cn(
-                    "flex-1 px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                    searchMode === "messages"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Messages
-                </button>
-              </div>
-
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder={
-                    searchMode === "conversations"
-                      ? "Search conversations..."
-                      : "Search messages..."
-                  }
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg bg-background border border-input pl-10 pr-4 py-2 text-sm placeholder-muted-foreground focus:border-ring focus:outline-none"
-                />
-              </div>
-            </motion.div>
-          )}
-
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto">
-            {!isCollapsed && showMessageResults ? (
-              /* Message Search Results */
-              <div className="space-y-1 p-2">
+            {/* Navigation Items */}
+            <div className="px-4 pb-4">
+              <div className="space-y-1">
+                {sidebarItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname.startsWith(item.href);
+
+                  return (
+                    <Button
+                      key={item.href}
+                      variant="ghost"
+                      className={cn(
+                        "hover:bg-accent relative h-9 overflow-hidden rounded-md px-0",
+                        isCollapsed ? "w-9" : "w-full",
+                        isActive && "bg-secondary hover:bg-secondary"
+                      )}
+                      asChild
+                    >
+                      <Link href={item.href}>
+                        <div className="flex h-full w-full items-center">
+                          <div className="flex h-full w-9 shrink-0 items-center justify-center">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <AnimatePresence initial={false}>
+                            {!isCollapsed && (
+                              <motion.div
+                                className="ml-2 flex-1 overflow-hidden text-left"
+                                initial={false}
+                                animate={{ width: "auto", opacity: 1 }}
+                                exit={{ width: 0, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <span className="whitespace-nowrap text-sm">
+                                  {item.title}
+                                </span>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </Link>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Search Section */}
+            {!isCollapsed && (
+              <motion.div
+                className="px-4 pb-4 border-t pt-4 space-y-3"
+                initial={false}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Search Mode Toggle */}
+                <div className="flex rounded-lg bg-secondary p-1">
+                  <button
+                    onClick={() => setSearchMode("conversations")}
+                    className={cn(
+                      "flex-1 px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                      searchMode === "conversations"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Chats
+                  </button>
+                  <button
+                    onClick={() => setSearchMode("messages")}
+                    className={cn(
+                      "flex-1 px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                      searchMode === "messages"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Messages
+                  </button>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder={
+                      searchMode === "conversations"
+                        ? "Search conversations..."
+                        : "Search messages..."
+                    }
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-lg bg-background border border-input pl-10 pr-4 py-2 text-sm placeholder-muted-foreground focus:border-ring focus:outline-none"
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Conversations List */}
+            {!isCollapsed && !showMessageResults && (
+              <motion.div
+                className="px-4 pb-4 border-t pt-4"
+                initial={false}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                {filteredConversations?.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
+                    <MessageSquare className="h-8 w-8 mb-2" />
+                    <p>No conversations yet</p>
+                    <p className="text-xs">Start a new chat to begin</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {filteredConversations?.map((conversation) => (
+                      <div
+                        key={conversation._id}
+                        onClick={() => router.push(`/chat/${conversation._id}`)}
+                        className={cn(
+                          "group relative flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent",
+                          currentChatId === conversation._id
+                            ? "bg-secondary border"
+                            : ""
+                        )}
+                      >
+                        <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+
+                        <div className="flex-1 overflow-hidden">
+                          <h3 className="truncate text-sm font-medium">
+                            {conversation.title}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className="capitalize">
+                              {conversation.provider}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {formatTimestamp(conversation.updatedAt)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Archive button (shows on hover) */}
+                        <button
+                          onClick={(e) => handleArchive(conversation._id, e)}
+                          className="opacity-0 group-hover:opacity-100 h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                          title="Archive"
+                        >
+                          <Archive className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Message Search Results */}
+            {!isCollapsed && showMessageResults && (
+              <div className="px-4 pb-4 space-y-1">
                 {messageSearchResults.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
                     <Search className="h-8 w-8 mb-2" />
@@ -361,7 +463,9 @@ export function Sidebar({ currentChatId }: SidebarProps) {
                             {result.conversation?.provider && (
                               <>
                                 <span>•</span>
-                                <span>{result.conversation.provider}</span>
+                                <span className="capitalize">
+                                  {result.conversation.provider}
+                                </span>
                               </>
                             )}
                           </div>
@@ -369,112 +473,6 @@ export function Sidebar({ currentChatId }: SidebarProps) {
                       </div>
                     </div>
                   ))
-                )}
-              </div>
-            ) : (
-              /* Navigation items and Conversations List */
-              <div className="space-y-1 p-4">
-                {/* Navigation Items */}
-                {sidebarItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname.startsWith(item.href);
-
-                  return (
-                    <Button
-                      key={item.href}
-                      variant="ghost"
-                      className={cn(
-                        "hover:bg-accent relative h-9 overflow-hidden rounded-md px-0",
-                        isCollapsed ? "w-9" : "w-full",
-                        isActive && "bg-secondary hover:bg-secondary"
-                      )}
-                      asChild
-                    >
-                      <Link href={item.href}>
-                        <div className="flex h-full w-full items-center">
-                          <div className="flex h-full w-9 shrink-0 items-center justify-center">
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <AnimatePresence initial={false}>
-                            {!isCollapsed && (
-                              <motion.div
-                                className="ml-[9px] flex-1 overflow-hidden text-left"
-                                initial={false}
-                                animate={{ width: "auto", opacity: 1 }}
-                                exit={{ width: 0, opacity: 0 }}
-                                transition={{ duration: 0.3 }}
-                              >
-                                <span className="whitespace-nowrap text-sm">
-                                  {item.title}
-                                </span>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </Link>
-                    </Button>
-                  );
-                })}
-
-                {/* Conversations List */}
-                {!isCollapsed && (
-                  <motion.div
-                    className="pt-4 border-t"
-                    initial={false}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {filteredConversations?.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
-                        <MessageSquare className="h-8 w-8 mb-2" />
-                        <p>No conversations yet</p>
-                        <p className="text-xs">Start a new chat to begin</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {filteredConversations?.map((conversation) => (
-                          <div
-                            key={conversation._id}
-                            onClick={() =>
-                              router.push(`/chat/${conversation._id}`)
-                            }
-                            className={cn(
-                              "group relative flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent",
-                              currentChatId === conversation._id
-                                ? "bg-secondary border"
-                                : ""
-                            )}
-                          >
-                            <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-
-                            <div className="flex-1 overflow-hidden">
-                              <h3 className="truncate text-sm font-medium">
-                                {conversation.title}
-                              </h3>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>{conversation.provider}</span>
-                                <span>•</span>
-                                <span>
-                                  {formatTimestamp(conversation.updatedAt)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Archive button (shows on hover) */}
-                            <button
-                              onClick={(e) =>
-                                handleArchive(conversation._id, e)
-                              }
-                              className="opacity-0 group-hover:opacity-100 h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
-                              title="Archive"
-                            >
-                              <Archive className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
                 )}
               </div>
             )}
@@ -503,13 +501,13 @@ export function Sidebar({ currentChatId }: SidebarProps) {
                       transition={{ duration: 0.3 }}
                       className="flex h-full w-9 shrink-0 items-center justify-center"
                     >
-                      <User className="h-5 w-5" />
+                      <User className="h-4 w-4" />
                     </motion.div>
                     <AnimatePresence initial={false} mode="wait">
                       {!isCollapsed && displayName && (
                         <motion.div
                           key="username"
-                          className="ml-[9px] flex-1 overflow-hidden text-left"
+                          className="ml-2 flex-1 overflow-hidden text-left"
                           initial={{ width: 0, opacity: 0 }}
                           animate={{ width: "auto", opacity: 1 }}
                           exit={{ width: 0, opacity: 0 }}
@@ -536,12 +534,12 @@ export function Sidebar({ currentChatId }: SidebarProps) {
                 >
                   <div className="flex h-full w-full items-center">
                     <div className="flex h-full w-9 shrink-0 items-center justify-center">
-                      <LogOut className="h-5 w-5" />
+                      <LogOut className="h-4 w-4" />
                     </div>
                     <AnimatePresence initial={false}>
                       {!isCollapsed && (
                         <motion.div
-                          className="ml-[9px] flex-1 overflow-hidden text-left"
+                          className="ml-2 flex-1 overflow-hidden text-left"
                           initial={false}
                           animate={{ width: "auto", opacity: 1 }}
                           exit={{ width: 0, opacity: 0 }}
