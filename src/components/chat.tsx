@@ -12,6 +12,8 @@ import {
   Send,
   X,
   Brain,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
@@ -20,6 +22,7 @@ import { AI_PROVIDERS, type ProviderType } from "~/lib/providers";
 import {
   cn,
   formatModelName,
+  formatProviderName,
   formatTimestamp,
   generateChatTitle,
 } from "~/lib/utils";
@@ -104,7 +107,9 @@ function ThinkingButton({
       <ContextMenuContent className="w-40">
         <ContextMenuRadioGroup
           value={reasoningLevel}
-          onValueChange={onReasoningChange}
+          onValueChange={(value) =>
+            onReasoningChange(value as "low" | "mid" | "high")
+          }
         >
           <ContextMenuRadioItem value="low" className="flex items-center gap-2">
             <Brain className="h-3 w-3 text-green-500" />
@@ -127,11 +132,48 @@ function ThinkingButton({
   );
 }
 
+// Thinking Component
+interface ThinkingProps {
+  isCollapsed: boolean;
+  onToggle: () => void;
+}
+
+function ThinkingSection({ isCollapsed, onToggle }: ThinkingProps) {
+  return (
+    <div className="mb-3">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+      >
+        {isCollapsed ? (
+          <ChevronRight className="h-3 w-3" />
+        ) : (
+          <ChevronDown className="h-3 w-3" />
+        )}
+        <Brain className="h-3 w-3 text-purple-500" />
+        <span>Reasoning</span>
+      </button>
+
+      {!isCollapsed && (
+        <div className="mt-2 pl-5 text-xs text-muted-foreground border-l-2 border-muted-foreground/20">
+          <div className="space-y-1 italic">
+            <p>The model is processing your request step by step...</p>
+            <p>
+              This thinking process helps provide more thoughtful responses.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Chat({ chatId }: ChatProps) {
   const router = useRouter();
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const [thinkingCollapsed, setThinkingCollapsed] = useState(true);
 
   // Load persistent AI preferences from localStorage
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>(() => {
@@ -235,6 +277,9 @@ export function Chat({ chatId }: ChatProps) {
               conversationId,
               role: "assistant",
               content: textContent,
+              // Store the actual provider and model used for this response
+              provider: selectedProvider,
+              model: selectedModel,
             });
             console.log("✅ AI message saved to Convex");
           }
@@ -367,6 +412,9 @@ export function Chat({ chatId }: ChatProps) {
             ? "I've shared some files with you. Please analyze them."
             : ""),
         attachments: userMessageAttachments,
+        // Store current provider and model for user message too
+        provider: selectedProvider,
+        model: selectedModel,
       });
 
       // Auto-rename conversation if it's the first meaningful message
@@ -636,8 +684,8 @@ export function Chat({ chatId }: ChatProps) {
         return;
       }
 
-      let lastUserMessage;
-      let retryFromMessageId;
+      let lastUserMessage: Message | undefined;
+      let retryFromMessageId: string | undefined;
 
       if (currentMessage.role === "user") {
         // Retrying from a user message
@@ -739,11 +787,13 @@ export function Chat({ chatId }: ChatProps) {
     return convexMessage?.timestamp || Date.now();
   };
 
-  // Get message provider and model from Convex data
+  // Get message provider and model from Convex data with fallback
   const getMessageProviderModel = (messageId: string) => {
     const convexMessage = conversationData?.messages?.find(
       (m) => m.id === messageId
     );
+
+    // Use message-specific provider/model if available, otherwise fall back to current selection
     return {
       provider: convexMessage?.provider || selectedProvider,
       model: convexMessage?.model || selectedModel,
@@ -790,6 +840,17 @@ export function Chat({ chatId }: ChatProps) {
 
               return (
                 <div key={`${msg.id}-${index}`} className="group space-y-3">
+                  {/* Thinking section for assistant messages */}
+                  {msg.role === "assistant" &&
+                    supportsReasoning(messageProviderModel.model) && (
+                      <ThinkingSection
+                        isCollapsed={thinkingCollapsed}
+                        onToggle={() =>
+                          setThinkingCollapsed(!thinkingCollapsed)
+                        }
+                      />
+                    )}
+
                   {/* Message content */}
                   <div
                     className={cn(
@@ -894,7 +955,7 @@ export function Chat({ chatId }: ChatProps) {
                       </span>
                       {msg.role === "assistant" && (
                         <span className="text-muted-foreground/60">
-                          {currentProvider?.name} •{" "}
+                          {formatProviderName(messageProviderModel.provider)} •{" "}
                           {formatModelName(
                             messageProviderModel.provider,
                             messageProviderModel.model

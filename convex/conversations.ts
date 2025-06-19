@@ -169,6 +169,8 @@ export const addMessage = mutation({
     conversationId: v.id("conversations"),
     role: v.string(),
     content: v.string(),
+    provider: v.optional(v.string()),
+    model: v.optional(v.string()),
     attachments: v.optional(
       v.array(
         v.object({
@@ -198,6 +200,8 @@ export const addMessage = mutation({
       conversationId,
       role,
       content,
+      provider,
+      model,
       attachments,
       tokenCount,
       inferenceSpeed,
@@ -219,8 +223,9 @@ export const addMessage = mutation({
       role,
       content,
       timestamp: now,
-      provider: conversation.provider,
-      model: conversation.model,
+      // Use provided provider/model or fall back to conversation defaults
+      provider: provider || conversation.provider,
+      model: model || conversation.model,
       ...(attachments && { attachments }),
       ...(tokenCount && { tokenCount }),
       ...(inferenceSpeed && { inferenceSpeed }),
