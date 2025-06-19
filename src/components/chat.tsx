@@ -146,6 +146,7 @@ export function Chat({ chatId }: ChatProps) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load persistent AI preferences from localStorage
@@ -792,7 +793,12 @@ export function Chat({ chatId }: ChatProps) {
       <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-3">
           <SidebarTrigger className="shrink-0" />
-          <Button variant="ghost" size="sm" className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={() => setSearchOpen(true)}
+          >
             <Search className="h-4 w-4" />
             <span className="text-sm">Search</span>
             <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
@@ -824,7 +830,7 @@ export function Chat({ chatId }: ChatProps) {
 
       {/* Messages - This will take available space and scroll independently */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="mx-auto max-w-4xl ml-auto mr-16 space-y-6">
+        <div className="mx-auto max-w-4xl ml-auto mr-8 space-y-6">
           {aiMessages.length === 0 ? (
             <div className="flex h-full items-center justify-center min-h-[60vh]">
               <div className="text-center space-y-4">
@@ -1047,7 +1053,7 @@ export function Chat({ chatId }: ChatProps) {
 
       {/* Fixed Input Area at Bottom */}
       <div className="shrink-0 border-t border-border/30 px-4 py-6 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-4xl ml-auto mr-16 space-y-4">
+        <div className="mx-auto max-w-4xl ml-auto mr-8 space-y-4">
           {/* File Upload Dropdown */}
           {showUpload && (
             <div className="border border-border/30 rounded-xl p-4 bg-background/60 backdrop-blur-md shadow-lg">
@@ -1155,7 +1161,7 @@ export function Chat({ chatId }: ChatProps) {
       />
 
       {/* Search Modal */}
-      <SearchModal />
+      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Settings Modal */}
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />

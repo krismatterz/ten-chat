@@ -14,9 +14,21 @@ import {
   CommandList,
 } from "./ui/command";
 
-export function SearchModal() {
-  const [open, setOpen] = useState(false);
+interface SearchModalProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function SearchModal({
+  open: controlledOpen,
+  onOpenChange,
+}: SearchModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const router = useRouter();
+
+  // Use controlled state if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
 
   // Load conversations for search
   const conversations = useQuery(api.conversations.list, {});
@@ -25,13 +37,13 @@ export function SearchModal() {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        setOpen((prevOpen) => !prevOpen);
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [setOpen]);
 
   const handleSelect = (conversationId: string) => {
     setOpen(false);

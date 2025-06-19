@@ -230,6 +230,11 @@ export const addMessage = mutation({
       ...(tokenCount && { tokenCount }),
       ...(inferenceSpeed && { inferenceSpeed }),
       ...(toolsUsed && { toolsUsed }),
+      // Add response timing for stats
+      ...(role === "assistant" && {
+        responseStartTime: now,
+        responseEndTime: now,
+      }),
     };
 
     const updatedMessages = [...(conversation.messages || []), newMessage];
@@ -544,5 +549,57 @@ export const autoRename = mutation({
     });
 
     return newTitle;
+  },
+});
+
+// Get user statistics for "Stats for Nerds"
+export const getUserStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+
+    const conversations = await ctx.db
+      .query("conversations")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("isDeleted"), false))
+      .collect();
+
+    let totalTokens = 0;
+    let totalMessages = 0;
+    let totalResponseTime = 0;
+    let assistantMessages = 0;
+
+    conversations.forEach((conversation) => {
+      const messages = conversation.messages || [];
+      totalMessages += messages.length;
+
+      messages.forEach((message) => {
+        if (message.tokenCount) {
+          totalTokens += message.tokenCount;
+        }
+
+        if (message.role === "assistant") {
+          assistantMessages++;
+          if (message.responseStartTime && message.responseEndTime) {
+            totalResponseTime +=
+              (message.responseEndTime - message.responseStartTime) / 1000; // Convert to seconds
+          }
+        }
+      });
+    });
+
+    const avgResponseTime =
+      assistantMessages > 0 ? totalResponseTime / assistantMessages : 0;
+    const tokensPerSecond =
+      totalResponseTime > 0 ? totalTokens / totalResponseTime : 0;
+
+    return {
+      totalTokens,
+      totalMessages,
+      totalConversations: conversations.length,
+      avgResponseTime: Number(avgResponseTime.toFixed(2)),
+      tokensPerSecond: Number(tokensPerSecond.toFixed(2)),
+      assistantMessages,
+    };
   },
 });
