@@ -65,12 +65,9 @@ export function SearchModal({
   };
 
   return (
-    <CommandDialog
-      open={open}
-      onOpenChange={setOpen}
-      className="bg-background/95 backdrop-blur-md border border-border/30 shadow-lg"
-    >
-      <div className="flex items-center gap-2 border-b px-4 py-3">
+    <CommandDialog open={open} onOpenChange={setOpen}>
+      {/* Search Input Header */}
+      <div className="flex items-center gap-2 border-b border-border/30 px-4 py-3 bg-background/95 backdrop-blur-md">
         <Search className="h-4 w-4 text-muted-foreground" />
         <CommandInput
           placeholder="Search conversations..."
@@ -78,68 +75,77 @@ export function SearchModal({
         />
       </div>
 
-      <CommandList className="max-h-[400px] overflow-y-auto">
-        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-          <MessageSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
-          <p>No conversations found.</p>
-          <p className="text-xs mt-1">Try a different search term</p>
-        </CommandEmpty>
+      {/* Content Area */}
+      <div className="bg-background/95 backdrop-blur-md border-0">
+        <CommandList className="max-h-[400px] overflow-y-auto">
+          <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+            <MessageSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
+            <p>No conversations found.</p>
+            <p className="text-xs mt-1">Try a different search term</p>
+          </CommandEmpty>
 
-        <CommandGroup>
-          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b bg-muted/30">
-            💬 Recent Conversations
-          </div>
-          {conversations?.slice(0, 10).map((conversation: any) => (
-            <CommandItem
-              key={conversation._id}
-              onSelect={() => handleSelect(conversation._id)}
-              className="flex items-center gap-3 px-3 py-3 hover:bg-accent cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <MessageSquare className="h-4 w-4 text-primary" />
-              </div>
+          <CommandGroup>
+            {/* Section Header */}
+            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border/30 bg-muted/20">
+              💬 Recent Conversations
+            </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">
-                  {conversation.title}
+            {conversations?.slice(0, 10).map((conversation: any) => (
+              <CommandItem
+                key={conversation._id}
+                onSelect={() => handleSelect(conversation._id)}
+                className="flex items-center gap-3 px-3 py-3 hover:bg-accent/50 cursor-pointer border-0 rounded-none"
+              >
+                {/* Icon */}
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="h-4 w-4 text-primary" />
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Clock className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    {formatRelativeTime(conversation._creationTime)}
-                  </span>
-                  {conversation.messageCount && (
-                    <>
-                      <span className="text-muted-foreground">•</span>
-                      <span className="text-xs text-muted-foreground">
-                        {conversation.messageCount} messages
-                      </span>
-                    </>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate text-foreground">
+                    {conversation.title}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      {formatRelativeTime(conversation._creationTime)}
+                    </span>
+                    {conversation.messageCount && (
+                      <>
+                        <span className="text-muted-foreground/60">•</span>
+                        <span className="text-xs text-muted-foreground">
+                          {conversation.messageCount} messages
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Provider Badge */}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {conversation.provider && (
+                    <span className="px-2 py-1 rounded-md bg-muted/50 text-xs font-medium">
+                      {conversation.provider}
+                    </span>
                   )}
                 </div>
-              </div>
+              </CommandItem>
+            ))}
 
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {conversation.provider && (
-                  <span className="px-2 py-1 rounded bg-muted/50">
-                    {conversation.provider}
-                  </span>
-                )}
+            {/* Empty State */}
+            {conversations && conversations.length === 0 && (
+              <div className="p-6 text-center text-muted-foreground text-sm">
+                <MessageSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                <p className="font-medium">No conversations yet</p>
+                <p className="text-xs mt-1">
+                  Start a new conversation to see it here
+                </p>
               </div>
-            </CommandItem>
-          ))}
-
-          {conversations && conversations.length === 0 && (
-            <div className="p-4 text-center text-muted-foreground text-sm">
-              <MessageSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
-              <p>No conversations yet</p>
-              <p className="text-xs mt-1">
-                Start a new conversation to see it here
-              </p>
-            </div>
-          )}
-        </CommandGroup>
-      </CommandList>
+            )}
+          </CommandGroup>
+        </CommandList>
+      </div>
     </CommandDialog>
   );
 }
