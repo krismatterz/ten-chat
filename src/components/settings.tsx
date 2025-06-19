@@ -115,9 +115,12 @@ export function Settings() {
   const renderTabButton = (
     tab: SettingsTab,
     icon: React.ReactNode,
-    label: string
+    label: string,
+    key?: string
   ) => (
     <button
+      key={key}
+      type="button"
       onClick={() => setActiveTab(tab)}
       className={cn(
         "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors",
@@ -157,7 +160,8 @@ export function Settings() {
             return renderTabButton(
               section.id as SettingsTab,
               <Icon className="h-4 w-4" />,
-              section.label
+              section.label,
+              section.id
             );
           })}
         </nav>
@@ -274,10 +278,14 @@ export function Settings() {
 
                 <div className="space-y-6">
                   <div>
-                    <label className="text-sm font-medium block mb-2">
+                    <label
+                      htmlFor="displayName"
+                      className="text-sm font-medium block mb-2"
+                    >
                       What should Ten Chat call you?
                     </label>
                     <Input
+                      id="displayName"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Your name"
@@ -290,10 +298,14 @@ export function Settings() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium block mb-2">
+                    <label
+                      htmlFor="jobTitle"
+                      className="text-sm font-medium block mb-2"
+                    >
                       What do you do?
                     </label>
                     <Input
+                      id="jobTitle"
                       value={jobTitle}
                       onChange={(e) => setJobTitle(e.target.value)}
                       placeholder="Frontend Developer, UI Designer, Student..."
@@ -306,14 +318,18 @@ export function Settings() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium block mb-2">
+                    <label
+                      htmlFor="traits"
+                      className="text-sm font-medium block mb-2"
+                    >
                       What traits should Ten Chat have? (up to 50, max 100 chars
                       each)
                     </label>
-                    <div className="flex flex-wrap gap-2 mb-3">
+                    <div id="traits" className="flex flex-wrap gap-2 mb-3">
                       {AVAILABLE_TRAITS.map((trait) => (
                         <button
                           key={trait}
+                          type="button"
                           onClick={() => toggleTrait(trait)}
                           className={cn(
                             "px-3 py-1 rounded-full text-sm font-medium transition-colors",
@@ -333,10 +349,14 @@ export function Settings() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium block mb-2">
+                    <label
+                      htmlFor="additionalInfo"
+                      className="text-sm font-medium block mb-2"
+                    >
                       Anything else Ten Chat should know about you?
                     </label>
                     <textarea
+                      id="additionalInfo"
                       value={additionalInfo}
                       onChange={(e) => setAdditionalInfo(e.target.value)}
                       placeholder="Tell Ten Chat about how you work, your interests, your writing style, or anything else that would help personalize your experience..."
@@ -367,9 +387,6 @@ export function Settings() {
                       </>
                     )}
                   </Button>
-                  <Button variant="outline" className="px-6">
-                    Load Legacy Data
-                  </Button>
                 </div>
               </div>
 
@@ -377,10 +394,13 @@ export function Settings() {
               <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-xl p-6">
                 <h4 className="text-md font-medium mb-3">Visual Options</h4>
                 <div>
-                  <label className="text-sm font-medium block mb-2">
+                  <label
+                    htmlFor="theme"
+                    className="text-sm font-medium block mb-2"
+                  >
                     Theme
                   </label>
-                  <div className="flex gap-2">
+                  <div id="theme" className="flex gap-2">
                     <Button
                       variant={theme === "light" ? "default" : "outline"}
                       size="sm"
@@ -494,7 +514,7 @@ export function Settings() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
                     <p className="text-sm text-muted-foreground mt-2">
                       Loading statistics...
                     </p>

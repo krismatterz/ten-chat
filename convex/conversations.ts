@@ -152,15 +152,11 @@ async function generateSmartTitle(
     const words = content.trim().split(/\s+/).slice(0, 6).join(" ");
     const truncated =
       words.length > 50 ? `${words.substring(0, 47)}...` : words;
-
-    // Add AI model context to title
-    const modelName = model.split("/").pop()?.split("-").slice(-1)[0] || model;
-    return `${truncated} • ${provider}/${modelName}`;
+    return truncated;
   }
 
-  // Fallback with AI model info
-  const modelName = model.split("/").pop()?.split("-").slice(-1)[0] || model;
-  return `${defaultTitle} • ${provider}/${modelName}`;
+  // For new chats without content, just return the default title
+  return defaultTitle;
 }
 
 // Add message to conversation (replaces old messages.add)
