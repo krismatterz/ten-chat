@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { MessageSquare, Search } from "lucide-react";
+import { MessageSquare, Search, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
@@ -18,6 +18,20 @@ interface SearchModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
+
+const formatRelativeTime = (timestamp: number) => {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString();
+};
 
 export function SearchModal({
   open: controlledOpen,
@@ -51,24 +65,79 @@ export function SearchModal({
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search conversations..." />
-      <CommandList>
-        <CommandEmpty>No conversations found.</CommandEmpty>
-        <CommandGroup heading="Recent Conversations">
+    <CommandDialog
+      open={open}
+      onOpenChange={setOpen}
+      className="bg-background/95 backdrop-blur-md border border-border/30 shadow-lg"
+    >
+      <div className="flex items-center gap-2 border-b px-4 py-3">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <CommandInput
+          placeholder="Search conversations..."
+          className="border-0 p-0 text-sm focus:ring-0 bg-transparent placeholder:text-muted-foreground"
+        />
+      </div>
+
+      <CommandList className="max-h-[400px] overflow-y-auto">
+        <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+          <MessageSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
+          <p>No conversations found.</p>
+          <p className="text-xs mt-1">Try a different search term</p>
+        </CommandEmpty>
+
+        <CommandGroup>
+          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b bg-muted/30">
+            💬 Recent Conversations
+          </div>
           {conversations?.slice(0, 10).map((conversation: any) => (
             <CommandItem
               key={conversation._id}
               onSelect={() => handleSelect(conversation._id)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-3 px-3 py-3 hover:bg-accent cursor-pointer"
             >
-              <MessageSquare className="h-4 w-4" />
-              <span className="truncate">{conversation.title}</span>
-              <span className="ml-auto text-xs text-muted-foreground">
-                {new Date(conversation._creationTime).toLocaleDateString()}
-              </span>
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="h-4 w-4 text-primary" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate">
+                  {conversation.title}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {formatRelativeTime(conversation._creationTime)}
+                  </span>
+                  {conversation.messageCount && (
+                    <>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-xs text-muted-foreground">
+                        {conversation.messageCount} messages
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {conversation.provider && (
+                  <span className="px-2 py-1 rounded bg-muted/50">
+                    {conversation.provider}
+                  </span>
+                )}
+              </div>
             </CommandItem>
           ))}
+
+          {conversations && conversations.length === 0 && (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              <MessageSquare className="mx-auto h-8 w-8 mb-2 opacity-50" />
+              <p>No conversations yet</p>
+              <p className="text-xs mt-1">
+                Start a new conversation to see it here
+              </p>
+            </div>
+          )}
         </CommandGroup>
       </CommandList>
     </CommandDialog>
