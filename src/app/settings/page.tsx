@@ -23,7 +23,7 @@ export default function SettingsPage() {
     <div className="flex h-screen flex-col bg-background">
       <header className="flex items-center gap-3 p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/chat/new" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Chat
           </Link>
