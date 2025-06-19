@@ -845,7 +845,7 @@ export function Chat({ chatId }: ChatProps) {
                       : "Hi! I'm Ten Chat, how can I help you?"}
                   </h3>
                   <div className="mt-3 space-y-2">
-                    {userPrefs?.traits && userPrefs.traits.length > 0 && (
+                    {/* {userPrefs?.traits && userPrefs.traits.length > 0 && (
                       <p className="text-sm text-muted-foreground">
                         I'll be {userPrefs.traits.slice(0, 3).join(", ")} in our
                         conversation.
@@ -855,7 +855,7 @@ export function Chat({ chatId }: ChatProps) {
                       <p className="text-sm text-muted-foreground">
                         I understand you work as a {userPrefs.jobTitle}.
                       </p>
-                    )}
+                    )} */}
                     <p className="text-muted-foreground max-w-md">
                       Ask me anything, share files, images, or search old
                       conversations.
