@@ -1,81 +1,81 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true,
-  },
-  "files": {
-    "ignoreUnknown": false,
-    "ignore": [
-      ".next/**",
-      "node_modules/**",
-      "convex/_generated/**",
-      "*.min.js",
-      "dist/**",
-      "build/**",
-    ],
-    "maxSize": 2097152,
-  },
-  "formatter": {
-    "enabled": true,
-    "useEditorconfig": true,
-    "formatWithErrors": false,
-    "indentStyle": "tab",
-    "indentWidth": 2,
-    "lineWidth": 80,
-    "lineEnding": "lf",
-    "ignore": [
-      "**/node_modules/**",
-      "**/.next/**",
-      "**/dist/**",
-      "**/.convex/**",
-    ],
-  },
-  "organizeImports": {
-    "enabled": true,
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true,
-      "suspicious": {
-        "noExplicitAny": "warn",
-      },
-      "correctness": {
-        "useExhaustiveDependencies": "warn",
-      },
-    },
-    "ignore": [
-      "**/node_modules/**",
-      "**/.next/**",
-      "**/dist/**",
-      "**/.convex/**",
-    ],
-  },
-  "javascript": {
-    "formatter": {
-      "jsxQuoteStyle": "double",
-      "quoteProperties": "asNeeded",
-      "trailingCommas": "es5",
-      "semicolons": "always",
-      "arrowParentheses": "always",
-      "bracketSpacing": true,
-      "bracketSameLine": false,
-      "quoteStyle": "double",
-      "attributePosition": "auto",
-    },
-  },
-  "overrides": [
-    {
-      "include": ["*.ts", "*.tsx"],
-      "linter": {
-        "rules": {
-          "style": {
-            "useImportType": "off",
-          },
-        },
-      },
-    },
-  ],
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"ignore": [
+			".next/**",
+			"node_modules/**",
+			"convex/_generated/**",
+			"*.min.js",
+			"dist/**",
+			"build/**"
+		],
+		"maxSize": 2097152
+	},
+	"formatter": {
+		"enabled": true,
+		"useEditorconfig": true,
+		"formatWithErrors": false,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineWidth": 80,
+		"lineEnding": "lf",
+		"ignore": [
+			"**/node_modules/**",
+			"**/.next/**",
+			"**/dist/**",
+			"**/.convex/**"
+		]
+	},
+	"organizeImports": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noExplicitAny": "warn"
+			},
+			"correctness": {
+				"useExhaustiveDependencies": "warn"
+			}
+		},
+		"ignore": [
+			"**/node_modules/**",
+			"**/.next/**",
+			"**/dist/**",
+			"**/.convex/**"
+		]
+	},
+	"javascript": {
+		"formatter": {
+			"jsxQuoteStyle": "double",
+			"quoteProperties": "asNeeded",
+			"trailingCommas": "es5",
+			"semicolons": "always",
+			"arrowParentheses": "always",
+			"bracketSpacing": true,
+			"bracketSameLine": false,
+			"quoteStyle": "double",
+			"attributePosition": "auto"
+		}
+	},
+	"overrides": [
+		{
+			"include": ["*.ts", "*.tsx"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useImportType": "off"
+					}
+				}
+			}
+		}
+	]
 }
