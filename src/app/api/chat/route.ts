@@ -20,7 +20,7 @@ const openrouter = createOpenAI({
   baseURL: "https://openrouter.ai/api/v1",
   apiKey: env.OPENROUTER_API_KEY,
   headers: {
-    "HTTP-Referer": "https://ten-chat.vercel.app",
+    "HTTP-Referer": "https://ten-chat-ai.vercel.app",
     "X-Title": "Ten Chat",
   },
 });
@@ -214,6 +214,10 @@ export async function POST(req: Request) {
         selectedModel = model || "anthropic/claude-3.5-sonnet";
         console.log("🔧 OpenRouter selected model:", selectedModel);
         console.log("🔧 OpenRouter API key present:", !!env.OPENROUTER_API_KEY);
+        console.log("🔧 OpenRouter headers:", {
+          "HTTP-Referer": "https://ten-chat-ai.vercel.app",
+          "X-Title": "Ten Chat",
+        });
         aiModel = openrouter(selectedModel);
         break;
       case "perplexity":

@@ -274,11 +274,13 @@ export function Chat({ chatId }: ChatProps) {
   }, [conversationId, setAiMessages]);
 
   useEffect(() => {
-    // Only sync once when conversation first loads, not continuously
+    // Only sync when conversation first loads or when not actively submitting
     if (
       conversationData?.messages &&
       conversationData.messages.length > 0 &&
-      !hasInitialized
+      !hasInitialized &&
+      !isSubmitting && // Don't sync during active submission to prevent race conditions
+      !aiIsLoading // Don't sync during AI response generation
     ) {
       const formattedMessages = conversationData.messages.map((msg) => ({
         id: msg.id,
@@ -300,7 +302,13 @@ export function Chat({ chatId }: ChatProps) {
     ) {
       setHasInitialized(false);
     }
-  }, [conversationData, hasInitialized, setAiMessages]); // Include all dependencies
+  }, [
+    conversationData,
+    hasInitialized,
+    setAiMessages,
+    isSubmitting,
+    aiIsLoading,
+  ]); // Include all dependencies
 
   // Direct file upload handler
   const handleDirectFileUpload = () => {
@@ -384,14 +392,48 @@ export function Chat({ chatId }: ChatProps) {
         });
       }
 
-      // Clear input and attachments before AI submission
+      // Clear input and attachments first
+      const messageContent = input.trim();
+      const currentAttachments = [...attachments];
       setAttachments([]);
       setShowUpload(false);
 
-      // For AI SDK, we need to trigger the chat
-      // The attachments will be included via the body.attachments parameter
-      if (input.trim() || attachments.length > 0) {
-        await aiHandleSubmit(e);
+      // Reset input immediately to prevent duplicate submissions
+      handleInputChange({
+        target: { value: "" },
+      } as React.ChangeEvent<HTMLTextAreaElement>);
+
+      // Manually add user message to AI SDK state to prevent race condition
+      const userMessage = {
+        id: nanoid(),
+        role: "user" as const,
+        content:
+          messageContent ||
+          (currentAttachments.length > 0
+            ? "I've shared some files with you. Please analyze them."
+            : ""),
+      };
+
+      // Update AI messages state directly to include the user message
+      setAiMessages((prev) => [...prev, userMessage]);
+
+      // For AI SDK, we need to trigger the chat with proper state
+      if (messageContent || currentAttachments.length > 0) {
+        // Create a minimal form event for AI submission
+        const aiEvent = {
+          preventDefault: () => {},
+        } as React.FormEvent;
+
+        try {
+          await aiHandleSubmit(aiEvent);
+        } catch (error) {
+          console.error("Failed to submit to AI:", error);
+          // Remove the user message from AI state on failure
+          setAiMessages((prev) =>
+            prev.filter((msg) => msg.id !== userMessage.id)
+          );
+          setIsSubmitting(false);
+        }
       }
     } catch (error) {
       console.error("Failed to send message:", error);
