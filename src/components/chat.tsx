@@ -313,22 +313,16 @@ export function Chat({ chatId }: ChatProps) {
     const files = event.target.files;
     if (!files) return;
 
-    // Convert FileList to File array and handle upload
-    const fileArray = Array.from(files);
+    console.log("📁 Direct file input - files selected:", files.length);
 
-    // For now, create mock FileAttachment objects
-    // In a real implementation, you'd upload these to your storage service
-    const fileAttachments: FileAttachment[] = fileArray.map((file) => ({
-      name: file.name,
-      url: URL.createObjectURL(file), // Temporary URL for preview
-      type: file.type,
-      size: file.size,
-    }));
-
-    setAttachments((prev) => [...prev, ...fileAttachments]);
+    // Show upload area when files are selected via direct input
+    setShowUpload(true);
 
     // Clear the input
     event.target.value = "";
+
+    // Note: Files will be handled by the FileUpload component's UploadThing integration
+    // This ensures proper upload to cloud storage rather than temporary blob URLs
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -877,18 +871,13 @@ export function Chat({ chatId }: ChatProps) {
 
               return (
                 <div key={`${msg.id}-${index}`} className="group space-y-3">
-                  <div
-                    className={cn(
-                      "flex gap-2 items-start",
-                      msg.role === "user" ? "justify-end" : "justify-start"
-                    )}
-                  >
+                  <div className="flex gap-2 items-start justify-start">
                     {/* Message content */}
                     <div
                       className={cn(
                         "prose prose-sm max-w-none",
                         msg.role === "user"
-                          ? "max-w-[85%] bg-primary/90 text-primary-foreground border-primary/20 rounded-2xl px-4 py-3 shadow-sm inline-block"
+                          ? "max-w-[85%] bg-primary/90 text-primary-foreground border-primary/20 rounded-2xl px-4 py-3 shadow-sm"
                           : "max-w-[95%] text-foreground"
                       )}
                     >
@@ -965,9 +954,9 @@ export function Chat({ chatId }: ChatProps) {
                       )}
                     </div>
 
-                    {/* Message Actions - Always on the right */}
+                    {/* Message Actions - Positioned on the right or below for mobile */}
                     {!isEditing && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 sm:ml-auto">
                         {/* Copy button for all messages */}
                         <button
                           type="button"

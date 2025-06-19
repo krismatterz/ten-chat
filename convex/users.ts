@@ -240,7 +240,7 @@ export const removeFavoriteModel = mutation({
     const currentFavorites = user.favoriteModels || [];
 
     await ctx.db.patch(user._id, {
-      favoriteModels: currentFavorites.filter((m) => m !== model),
+      favoriteModels: currentFavorites.filter((m: string) => m !== model),
       lastActiveAt: Date.now(),
     });
   },
@@ -254,7 +254,7 @@ export const toggleFavoriteModel = mutation({
     const currentFavorites = user.favoriteModels || [];
 
     const newFavorites = currentFavorites.includes(model)
-      ? currentFavorites.filter((m) => m !== model)
+      ? currentFavorites.filter((m: string) => m !== model)
       : [...currentFavorites, model];
 
     await ctx.db.patch(user._id, {

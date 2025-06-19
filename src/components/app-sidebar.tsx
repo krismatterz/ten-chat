@@ -687,32 +687,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        {/* Settings and Theme toggle */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Settings */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/settings"}>
-                  <a href="/settings" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Theme Toggle */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <ThemeToggle />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
         {/* User section */}
         <SidebarGroup>
           <SidebarGroupContent>
