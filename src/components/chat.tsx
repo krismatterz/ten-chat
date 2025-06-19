@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Send,
   X,
+  Brain,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,14 @@ import { AIProviderSelector } from "./ai-provider-selector";
 import { FileUpload } from "./file-upload";
 import { Button } from "./ui/button";
 import { SidebarTrigger } from "./ui/sidebar";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+  ContextMenuTrigger,
+} from "./ui/context-menu";
 
 interface FileAttachment {
   name: string;
@@ -38,6 +47,84 @@ interface FileAttachment {
 
 interface ChatProps {
   chatId: string;
+}
+
+// Helper function to check if model supports reasoning
+const supportsReasoning = (model: string) => {
+  const reasoningModels = [
+    "o3-mini-2025-01-31",
+    "o3-2025-04-16",
+    "claude-3.5-sonnet",
+    "claude-3-7-sonnet-20250219",
+    "claude-4-sonnet-20250522",
+    "sonar-pro",
+  ];
+  return reasoningModels.some((reasoningModel) =>
+    model.includes(reasoningModel)
+  );
+};
+
+// Thinking Button Component
+interface ThinkingButtonProps {
+  reasoningLevel: "low" | "mid" | "high";
+  onReasoningChange: (level: "low" | "mid" | "high") => void;
+  disabled?: boolean;
+}
+
+function ThinkingButton({
+  reasoningLevel,
+  onReasoningChange,
+  disabled,
+}: ThinkingButtonProps) {
+  const getReasoningLabel = (level: "low" | "mid" | "high") => {
+    switch (level) {
+      case "low":
+        return "Quick";
+      case "mid":
+        return "Balanced";
+      case "high":
+        return "Deep";
+    }
+  };
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 w-8 rounded-full p-0 bg-background/60 backdrop-blur-md border-border/30 hover:bg-background/80 hover:border-border/50 transition-all duration-200"
+          disabled={disabled}
+          title={`Thinking mode: ${getReasoningLabel(reasoningLevel)}`}
+        >
+          <Brain className="h-4 w-4 text-purple-500" />
+        </Button>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-40">
+        <ContextMenuRadioGroup
+          value={reasoningLevel}
+          onValueChange={onReasoningChange}
+        >
+          <ContextMenuRadioItem value="low" className="flex items-center gap-2">
+            <Brain className="h-3 w-3 text-green-500" />
+            Quick
+          </ContextMenuRadioItem>
+          <ContextMenuRadioItem value="mid" className="flex items-center gap-2">
+            <Brain className="h-3 w-3 text-yellow-500" />
+            Balanced
+          </ContextMenuRadioItem>
+          <ContextMenuRadioItem
+            value="high"
+            className="flex items-center gap-2"
+          >
+            <Brain className="h-3 w-3 text-red-500" />
+            Deep
+          </ContextMenuRadioItem>
+        </ContextMenuRadioGroup>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
 }
 
 export function Chat({ chatId }: ChatProps) {
@@ -85,6 +172,10 @@ export function Chat({ chatId }: ChatProps) {
   // Convex hooks
   const createConversation = useMutation(api.conversations.create);
   const addMessage = useMutation(api.conversations.addMessage);
+  const updateMessage = useMutation(api.conversations.updateMessage);
+  const deleteMessagesFromPoint = useMutation(
+    api.conversations.deleteMessagesFromPoint
+  );
   const autoRename = useMutation(api.conversations.autoRename);
   const branchConversation = useMutation(api.conversations.branch);
 
@@ -380,20 +471,85 @@ export function Chat({ chatId }: ChatProps) {
     if (!editingContent.trim()) return;
 
     try {
-      // Update the message in Convex
-      // Note: We'll need to add an update message mutation in Convex
-      console.log("Saving edited message:", messageId, editingContent);
+      if (!conversationId) return;
 
-      // Update the local AI messages
-      setAiMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId ? { ...msg, content: editingContent } : msg
-        )
-      );
+      // Get the original message content to check if it actually changed
+      const originalMessage = aiMessages.find((msg) => msg.id === messageId);
+      if (!originalMessage) return;
 
-      // Clear editing state
+      // If content hasn't changed, just cancel edit
+      if (originalMessage.content === editingContent.trim()) {
+        handleCancelEdit();
+        return;
+      }
+
+      // Update message in Convex
+      await updateMessage({
+        conversationId,
+        messageId,
+        content: editingContent,
+      });
+
+      // Clear editing state first
       setEditingMessageId(null);
       setEditingContent("");
+
+      // Find the updated message and check if it's a user message
+      if (originalMessage && originalMessage.role === "user") {
+        // For user messages, delete all subsequent messages and trigger new AI response
+        await deleteMessagesFromPoint({
+          conversationId,
+          fromMessageId: messageId,
+        });
+
+        // Update local state to show only messages up to the edited message
+        const messageIndex = aiMessages.findIndex(
+          (msg) => msg.id === messageId
+        );
+        if (messageIndex !== -1) {
+          const messagesToKeep = aiMessages.slice(0, messageIndex);
+          const updatedMessage = {
+            ...originalMessage,
+            content: editingContent,
+          };
+          const newMessages = [...messagesToKeep, updatedMessage];
+          setAiMessages(newMessages);
+
+          // Trigger new AI response
+          const syntheticEvent = {
+            preventDefault: () => {},
+          } as React.FormEvent;
+          const previousInput = input;
+
+          // Set input to edited content temporarily
+          handleInputChange({
+            target: { value: editingContent },
+          } as React.ChangeEvent<HTMLTextAreaElement>);
+
+          // Wait for state update then submit
+          setTimeout(async () => {
+            try {
+              await aiHandleSubmit(syntheticEvent);
+              // Reset input
+              handleInputChange({
+                target: { value: previousInput },
+              } as React.ChangeEvent<HTMLTextAreaElement>);
+            } catch (error) {
+              console.error("Failed to generate new AI response:", error);
+              handleInputChange({
+                target: { value: previousInput },
+              } as React.ChangeEvent<HTMLTextAreaElement>);
+            }
+          }, 100);
+        }
+      } else {
+        // For assistant messages, just update locally
+        setAiMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, content: editingContent } : msg
+          )
+        );
+      }
 
       // Show success notification
       const notification = document.createElement("div");
@@ -408,6 +564,9 @@ export function Chat({ chatId }: ChatProps) {
       }, 2000);
     } catch (error) {
       console.error("Failed to save edit:", error);
+      // Reset editing state on error
+      setEditingMessageId(null);
+      setEditingContent("");
     }
   };
 
@@ -460,13 +619,11 @@ export function Chat({ chatId }: ChatProps) {
     messageId?: string
   ) => {
     if (aiIsLoading) return; // Can't retry when loading
+    if (!conversationId) return;
 
     console.log("🔄 Retrying message at index:", messageIndex);
 
     try {
-      let lastUserMessage;
-      let messagesToKeep;
-
       // Check if messageIndex is valid
       if (messageIndex >= aiMessages.length) {
         console.error("Invalid message index");
@@ -479,12 +636,15 @@ export function Chat({ chatId }: ChatProps) {
         return;
       }
 
-      if (messageId && currentMessage.role === "user") {
-        // Retrying a user message - keep all messages before this one
+      let lastUserMessage;
+      let retryFromMessageId;
+
+      if (currentMessage.role === "user") {
+        // Retrying from a user message
         lastUserMessage = currentMessage;
-        messagesToKeep = aiMessages.slice(0, messageIndex);
+        retryFromMessageId = currentMessage.id;
       } else {
-        // Retrying an AI response - get the last user message before it
+        // Retrying from an AI response - get the previous user message
         if (messageIndex === 0) {
           console.error("Can't retry first message");
           return;
@@ -495,8 +655,7 @@ export function Chat({ chatId }: ChatProps) {
           return;
         }
         lastUserMessage = previousMessage;
-        // Keep all messages before the AI response we're retrying
-        messagesToKeep = aiMessages.slice(0, messageIndex);
+        retryFromMessageId = previousMessage.id;
       }
 
       if (!lastUserMessage) {
@@ -504,41 +663,29 @@ export function Chat({ chatId }: ChatProps) {
         return;
       }
 
-      // Update the AI messages to remove everything after the retry point
+      // Delete messages from this point in Convex database
+      await deleteMessagesFromPoint({
+        conversationId,
+        fromMessageId: retryFromMessageId,
+      });
+
+      // Update local state to show only messages up to the retry point
+      const retryFromIndex = aiMessages.findIndex(
+        (msg) => msg.id === retryFromMessageId
+      );
+      const messagesToKeep = aiMessages.slice(0, retryFromIndex + 1);
       setAiMessages(messagesToKeep);
 
-      console.log(
-        "🔄 Triggering new AI response with message:",
-        lastUserMessage.content
-      );
-
-      // Create a synthetic form submission to trigger a new AI response
-      const syntheticEvent = {
-        preventDefault: () => {},
-      } as React.FormEvent;
-
-      // Temporarily set the input to the user message content for the API call
+      // Trigger new AI response
+      const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
       const previousInput = input;
 
-      // Manually set up the message context for the AI
-      const contextMessages = [
-        ...messagesToKeep,
-        {
-          id: lastUserMessage.id,
-          role: lastUserMessage.role,
-          content: lastUserMessage.content,
-        },
-      ];
-
-      // Update AI messages with the context including the user message
-      setAiMessages(contextMessages);
-
-      // Set the input temporarily for the API call
+      // Set input to the user message content temporarily
       handleInputChange({
         target: { value: lastUserMessage.content },
       } as React.ChangeEvent<HTMLTextAreaElement>);
 
-      // Wait a bit for state to update, then submit
+      // Wait for state update then submit
       setTimeout(async () => {
         try {
           await aiHandleSubmit(syntheticEvent);
@@ -548,7 +695,6 @@ export function Chat({ chatId }: ChatProps) {
           } as React.ChangeEvent<HTMLTextAreaElement>);
         } catch (error) {
           console.error("Failed to resubmit:", error);
-          // Reset input back to what it was
           handleInputChange({
             target: { value: previousInput },
           } as React.ChangeEvent<HTMLTextAreaElement>);
@@ -643,7 +789,7 @@ export function Chat({ chatId }: ChatProps) {
               const messageProviderModel = getMessageProviderModel(msg.id);
 
               return (
-                <div key={msg.id || index} className="group space-y-3">
+                <div key={`${msg.id}-${index}`} className="group space-y-3">
                   {/* Message content */}
                   <div
                     className={cn(
@@ -659,27 +805,28 @@ export function Chat({ chatId }: ChatProps) {
                         <textarea
                           value={editingContent}
                           onChange={(e) => setEditingContent(e.target.value)}
-                          className="w-full resize-none bg-background/80 text-foreground border border-border rounded-lg p-2 min-h-[60px]"
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              handleCancelEdit();
+                            } else if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSaveEdit(msg.id);
+                            }
+                          }}
+                          className="w-full resize-none bg-background/90 text-foreground border border-border/50 rounded-lg p-3 min-h-[60px] focus:border-ring focus:ring-1 focus:ring-ring focus:outline-none"
                           autoFocus
+                          placeholder="Edit your message..."
                         />
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleSaveEdit(msg.id)}
-                            className="h-7 px-3 text-xs bg-green-600 hover:bg-green-700"
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCancelEdit}
-                            className="h-7 px-3 text-xs"
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Cancel
-                          </Button>
+                        <div className="flex gap-2 text-xs text-muted-foreground">
+                          <kbd className="px-1.5 py-0.5 bg-muted rounded border">
+                            Enter
+                          </kbd>{" "}
+                          to save
+                          <span>•</span>
+                          <kbd className="px-1.5 py-0.5 bg-muted rounded border">
+                            Esc
+                          </kbd>{" "}
+                          to cancel
                         </div>
                       </div>
                     ) : (
@@ -729,11 +876,19 @@ export function Chat({ chatId }: ChatProps) {
                   {/* Message metadata and actions */}
                   <div
                     className={cn(
-                      "flex items-center justify-between text-xs text-muted-foreground",
-                      msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                      "flex items-center text-xs text-muted-foreground",
+                      msg.role === "user"
+                        ? "justify-end gap-2" // User messages: timestamp and actions on the right
+                        : "justify-between" // AI messages: timestamp left, actions right
                     )}
                   >
-                    <div className="flex items-center gap-2">
+                    {/* Timestamp and provider info */}
+                    <div
+                      className={cn(
+                        "flex items-center gap-2",
+                        msg.role === "user" ? "order-2" : "order-1"
+                      )}
+                    >
                       <span>
                         {formatTimestamp(getMessageTimestamp(msg.id))}
                       </span>
@@ -750,7 +905,12 @@ export function Chat({ chatId }: ChatProps) {
 
                     {/* Message Actions */}
                     {!isEditing && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div
+                        className={cn(
+                          "flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+                          msg.role === "user" ? "order-1" : "order-2"
+                        )}
+                      >
                         {/* Copy button for all messages */}
                         <button
                           type="button"
@@ -826,7 +986,8 @@ export function Chat({ chatId }: ChatProps) {
                     <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {currentProvider?.name} is thinking...
+                    {formatModelName(selectedProvider, selectedModel)} is
+                    thinking...
                   </span>
                 </div>
               </div>
@@ -838,8 +999,8 @@ export function Chat({ chatId }: ChatProps) {
       </div>
 
       {/* Fixed Input Area at Bottom */}
-      <div className="shrink-0 border-t border-border/30 px-6 py-4 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-3xl space-y-3">
+      <div className="shrink-0 border-t border-border/30 px-6 py-6 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto max-w-3xl space-y-4">
           {/* File Upload Dropdown */}
           {showUpload && (
             <div className="border border-border/30 rounded-xl p-4 bg-background/60 backdrop-blur-md shadow-lg">
@@ -865,7 +1026,7 @@ export function Chat({ chatId }: ChatProps) {
                       handleSendMessage(e);
                     }
                   }}
-                  placeholder={`Message ${currentProvider?.name}...`}
+                  placeholder={`Message ${formatModelName(selectedProvider, selectedModel)}...`}
                   className="flex-1 resize-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[28px] max-h-[200px]"
                   rows={1}
                   disabled={aiIsLoading}
@@ -893,7 +1054,7 @@ export function Chat({ chatId }: ChatProps) {
             {/* Controls Row */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                {/* AI Provider Selector */}
+                {/* AI Provider Selector - Moved back here */}
                 <AIProviderSelector
                   selectedProvider={selectedProvider}
                   selectedModel={selectedModel}
@@ -914,6 +1075,15 @@ export function Chat({ chatId }: ChatProps) {
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
+
+                {/* Thinking Button - Only show for reasoning-capable models */}
+                {supportsReasoning(selectedModel) && (
+                  <ThinkingButton
+                    reasoningLevel={reasoningLevel}
+                    onReasoningChange={handleReasoningChange}
+                    disabled={aiIsLoading}
+                  />
+                )}
               </div>
 
               {attachments.length > 0 && (
