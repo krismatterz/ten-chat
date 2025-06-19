@@ -256,4 +256,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Built with ❤️ by Krisusing modern web technologies
+Built with ❤️ by Kris using modern web technologies
