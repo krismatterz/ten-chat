@@ -132,48 +132,11 @@ function ThinkingButton({
   );
 }
 
-// Thinking Component
-interface ThinkingProps {
-  isCollapsed: boolean;
-  onToggle: () => void;
-}
-
-function ThinkingSection({ isCollapsed, onToggle }: ThinkingProps) {
-  return (
-    <div className="mb-3">
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-      >
-        {isCollapsed ? (
-          <ChevronRight className="h-3 w-3" />
-        ) : (
-          <ChevronDown className="h-3 w-3" />
-        )}
-        <Brain className="h-3 w-3 text-purple-500" />
-        <span>Reasoning</span>
-      </button>
-
-      {!isCollapsed && (
-        <div className="mt-2 pl-5 text-xs text-muted-foreground border-l-2 border-muted-foreground/20">
-          <div className="space-y-1 italic">
-            <p>The model is processing your request step by step...</p>
-            <p>
-              This thinking process helps provide more thoughtful responses.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function Chat({ chatId }: ChatProps) {
   const router = useRouter();
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
-  const [thinkingCollapsed, setThinkingCollapsed] = useState(true);
 
   // Load persistent AI preferences from localStorage
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>(() => {
@@ -232,20 +195,6 @@ export function Chat({ chatId }: ChatProps) {
     api.conversations.get,
     conversationId ? { conversationId } : "skip"
   );
-
-  // Handle case where conversation was deleted
-  useEffect(() => {
-    if (conversationId && conversationData === undefined) {
-      // If we're trying to load a specific conversation but get undefined, it might be deleted
-      // Redirect to home after a brief delay
-      const timer = setTimeout(() => {
-        if (window.location.pathname !== "/") {
-          window.location.href = "/";
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [conversationId, conversationData]);
 
   // AI Chat hook for streaming (AI SDK v4 stable)
   const {
@@ -684,8 +633,8 @@ export function Chat({ chatId }: ChatProps) {
         return;
       }
 
-      let lastUserMessage: Message | undefined;
-      let retryFromMessageId: string | undefined;
+      let lastUserMessage;
+      let retryFromMessageId;
 
       if (currentMessage.role === "user") {
         // Retrying from a user message
@@ -706,16 +655,24 @@ export function Chat({ chatId }: ChatProps) {
         retryFromMessageId = previousMessage.id;
       }
 
-      if (!lastUserMessage) {
+      if (!lastUserMessage || !retryFromMessageId) {
         console.error("Could not determine user message for retry");
         return;
       }
 
-      // Delete messages from this point in Convex database
-      await deleteMessagesFromPoint({
-        conversationId,
-        fromMessageId: retryFromMessageId,
-      });
+      console.log("🔄 Deleting messages from:", retryFromMessageId);
+
+      try {
+        // Delete messages from this point in Convex database
+        await deleteMessagesFromPoint({
+          conversationId,
+          fromMessageId: retryFromMessageId,
+        });
+        console.log("✅ Messages deleted from Convex");
+      } catch (convexError) {
+        console.error("❌ Convex deleteMessagesFromPoint error:", convexError);
+        // Continue with local state update even if Convex fails
+      }
 
       // Update local state to show only messages up to the retry point
       const retryFromIndex = aiMessages.findIndex(
@@ -725,6 +682,11 @@ export function Chat({ chatId }: ChatProps) {
       setAiMessages(messagesToKeep);
 
       // Trigger new AI response
+      console.log(
+        "🔄 Triggering new AI response with:",
+        lastUserMessage.content
+      );
+
       const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
       const previousInput = input;
 
@@ -737,19 +699,18 @@ export function Chat({ chatId }: ChatProps) {
       setTimeout(async () => {
         try {
           await aiHandleSubmit(syntheticEvent);
+          console.log("✅ AI resubmitted successfully");
           // Reset input back to what it was
           handleInputChange({
             target: { value: previousInput },
           } as React.ChangeEvent<HTMLTextAreaElement>);
         } catch (error) {
-          console.error("Failed to resubmit:", error);
+          console.error("❌ Failed to resubmit to AI:", error);
           handleInputChange({
             target: { value: previousInput },
           } as React.ChangeEvent<HTMLTextAreaElement>);
         }
       }, 100);
-
-      console.log("✅ Message retry initiated successfully");
 
       // Show success notification
       const notification = document.createElement("div");
@@ -840,17 +801,6 @@ export function Chat({ chatId }: ChatProps) {
 
               return (
                 <div key={`${msg.id}-${index}`} className="group space-y-3">
-                  {/* Thinking section for assistant messages */}
-                  {msg.role === "assistant" &&
-                    supportsReasoning(messageProviderModel.model) && (
-                      <ThinkingSection
-                        isCollapsed={thinkingCollapsed}
-                        onToggle={() =>
-                          setThinkingCollapsed(!thinkingCollapsed)
-                        }
-                      />
-                    )}
-
                   {/* Message content */}
                   <div
                     className={cn(
@@ -935,21 +885,9 @@ export function Chat({ chatId }: ChatProps) {
                   </div>
 
                   {/* Message metadata and actions */}
-                  <div
-                    className={cn(
-                      "flex items-center text-xs text-muted-foreground",
-                      msg.role === "user"
-                        ? "justify-end gap-2" // User messages: timestamp and actions on the right
-                        : "justify-between" // AI messages: timestamp left, actions right
-                    )}
-                  >
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     {/* Timestamp and provider info */}
-                    <div
-                      className={cn(
-                        "flex items-center gap-2",
-                        msg.role === "user" ? "order-2" : "order-1"
-                      )}
-                    >
+                    <div className="flex items-center gap-2">
                       <span>
                         {formatTimestamp(getMessageTimestamp(msg.id))}
                       </span>
@@ -966,12 +904,7 @@ export function Chat({ chatId }: ChatProps) {
 
                     {/* Message Actions */}
                     {!isEditing && (
-                      <div
-                        className={cn(
-                          "flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
-                          msg.role === "user" ? "order-1" : "order-2"
-                        )}
-                      >
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {/* Copy button for all messages */}
                         <button
                           type="button"
