@@ -860,7 +860,12 @@ export function Chat({ chatId }: ChatProps) {
 
               return (
                 <div key={`${msg.id}-${index}`} className="group space-y-3">
-                  <div className="flex gap-2 items-start justify-start">
+                  <div
+                    className={cn(
+                      "flex gap-2 items-start",
+                      msg.role === "user" ? "justify-end" : "justify-start"
+                    )}
+                  >
                     {/* Message content */}
                     <div
                       className={cn(
@@ -943,10 +948,10 @@ export function Chat({ chatId }: ChatProps) {
                       )}
                     </div>
 
-                    {/* Message Actions - Positioned on the right or below for mobile */}
-                    {!isEditing && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 sm:ml-auto">
-                        {/* Copy button for all messages */}
+                    {/* Message Actions for user messages - keep on right */}
+                    {!isEditing && msg.role === "user" && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                        {/* Copy button */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -960,21 +965,19 @@ export function Chat({ chatId }: ChatProps) {
                         </button>
 
                         {/* Edit button for user messages */}
-                        {msg.role === "user" && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditMessage(msg.id, msg.content);
-                            }}
-                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                            title="Edit message"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditMessage(msg.id, msg.content);
+                          }}
+                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                          title="Edit message"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
 
-                        {/* Retry button for all messages */}
+                        {/* Retry button */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -987,24 +990,54 @@ export function Chat({ chatId }: ChatProps) {
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
                         </button>
-
-                        {/* Branch button for assistant messages */}
-                        {msg.role === "assistant" && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleBranchFromMessage(msg.id);
-                            }}
-                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                            title="Branch conversation from this message"
-                          >
-                            <GitBranch className="h-3.5 w-3.5" />
-                          </button>
-                        )}
                       </div>
                     )}
                   </div>
+
+                  {/* AI Message Actions - Below the message */}
+                  {!isEditing && msg.role === "assistant" && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mt-2">
+                      {/* Copy button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyMessage(msg.content);
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Copy message"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Retry button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRetryMessage(index, msg.id);
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Retry from this message"
+                        disabled={aiIsLoading}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Branch button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBranchFromMessage(msg.id);
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Branch conversation from this message"
+                      >
+                        <GitBranch className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
 
                   {/* Message metadata - Only show provider/timestamp for assistant messages */}
                   {msg.role === "assistant" && !isEditing && (

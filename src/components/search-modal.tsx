@@ -122,24 +122,23 @@ export function SearchModal({
                       <span className="text-xs text-muted-foreground">
                         {formatRelativeTime(conversation._creationTime)}
                       </span>
-                      {conversation.messageCount && (
-                        <>
-                          <span className="text-muted-foreground/60">•</span>
-                          <span className="text-xs text-muted-foreground">
-                            {conversation.messageCount} messages
-                          </span>
-                        </>
-                      )}
+                      {conversation.messageCount &&
+                        conversation.messageCount > 0 && (
+                          <>
+                            <span className="text-muted-foreground/60">•</span>
+                            <span className="text-xs text-muted-foreground">
+                              {conversation.messageCount} messages
+                            </span>
+                          </>
+                        )}
                     </div>
                   </div>
 
-                  {/* Provider Badge */}
+                  {/* AI Badge */}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {conversation.provider && (
-                      <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-muted">
-                        {conversation.provider}
-                      </span>
-                    )}
+                    <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-muted">
+                      AI
+                    </span>
                   </div>
                 </div>
               ))}
