@@ -947,52 +947,52 @@ export function Chat({ chatId }: ChatProps) {
                         </div>
                       )}
                     </div>
-
-                    {/* Message Actions for user messages - keep on right */}
-                    {!isEditing && msg.role === "user" && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                        {/* Copy button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopyMessage(msg.content);
-                          }}
-                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                          title="Copy message"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-
-                        {/* Edit button for user messages */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditMessage(msg.id, msg.content);
-                          }}
-                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                          title="Edit message"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
-
-                        {/* Retry button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRetryMessage(index, msg.id);
-                          }}
-                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                          title="Retry from this message"
-                          disabled={aiIsLoading}
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    )}
                   </div>
+
+                  {/* User Message Actions - Below the message */}
+                  {!isEditing && msg.role === "user" && (
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity mt-2">
+                      {/* Copy button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyMessage(msg.content);
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Copy message"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Edit button for user messages */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditMessage(msg.id, msg.content);
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Edit message"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Retry button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRetryMessage(index, msg.id);
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Retry from this message"
+                        disabled={aiIsLoading}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
 
                   {/* AI Message Actions - Below the message */}
                   {!isEditing && msg.role === "assistant" && (
