@@ -877,166 +877,170 @@ export function Chat({ chatId }: ChatProps) {
 
               return (
                 <div key={`${msg.id}-${index}`} className="group space-y-3">
-                  {/* Message content */}
                   <div
                     className={cn(
-                      "prose prose-sm max-w-none",
-                      msg.role === "user"
-                        ? "ml-auto max-w-[85%] bg-primary/90 text-primary-foreground border-primary/20 rounded-2xl px-4 py-3 shadow-sm"
-                        : "max-w-[95%] text-foreground"
+                      "flex gap-2 items-start",
+                      msg.role === "user" ? "justify-end" : "justify-start"
                     )}
                   >
-                    {/* Message text */}
-                    {isEditing ? (
-                      <div className="space-y-2">
-                        <textarea
-                          value={editingContent}
-                          onChange={(e) => setEditingContent(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Escape") {
-                              handleCancelEdit();
-                            } else if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSaveEdit(msg.id);
-                            }
-                          }}
-                          className="w-full resize-none bg-background/90 text-foreground border border-border/50 rounded-lg p-3 min-h-[60px] focus:border-ring focus:ring-1 focus:ring-ring focus:outline-none"
-                          placeholder="Edit your message..."
-                        />
-                        <div className="flex gap-2 text-xs text-muted-foreground">
-                          <kbd className="px-1.5 py-0.5 bg-muted rounded border">
-                            Enter
-                          </kbd>{" "}
-                          to save
-                          <span>•</span>
-                          <kbd className="px-1.5 py-0.5 bg-muted rounded border">
-                            Esc
-                          </kbd>{" "}
-                          to cancel
+                    {/* Message content */}
+                    <div
+                      className={cn(
+                        "prose prose-sm max-w-none",
+                        msg.role === "user"
+                          ? "max-w-[85%] bg-primary/90 text-primary-foreground border-primary/20 rounded-2xl px-4 py-3 shadow-sm inline-block"
+                          : "max-w-[95%] text-foreground"
+                      )}
+                    >
+                      {/* Message text */}
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editingContent}
+                            onChange={(e) => setEditingContent(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") {
+                                handleCancelEdit();
+                              } else if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSaveEdit(msg.id);
+                              }
+                            }}
+                            className="w-full resize-none bg-background/90 text-foreground border border-border/50 rounded-lg p-3 min-h-[60px] focus:border-ring focus:ring-1 focus:ring-ring focus:outline-none"
+                            placeholder="Edit your message..."
+                          />
+                          <div className="flex gap-2 text-xs text-muted-foreground">
+                            <kbd className="px-1.5 py-0.5 bg-muted rounded border">
+                              Enter
+                            </kbd>{" "}
+                            to save
+                            <span>•</span>
+                            <kbd className="px-1.5 py-0.5 bg-muted rounded border">
+                              Esc
+                            </kbd>{" "}
+                            to cancel
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div
-                        className={cn(
-                          "whitespace-pre-wrap",
-                          msg.role === "user"
-                            ? "text-primary-foreground"
-                            : "text-foreground"
-                        )}
-                      >
-                        {msg.content}
-                      </div>
-                    )}
+                      ) : (
+                        <div
+                          className={cn(
+                            "whitespace-pre-wrap",
+                            msg.role === "user"
+                              ? "text-primary-foreground"
+                              : "text-foreground"
+                          )}
+                        >
+                          {msg.content}
+                        </div>
+                      )}
 
-                    {/* Display attachments if they exist */}
-                    {conversationData?.messages?.find((m) => m.id === msg.id)
-                      ?.attachments && (
-                      <div className="mt-3 space-y-2">
-                        {conversationData.messages
-                          .find((m) => m.id === msg.id)
-                          ?.attachments?.map((attachment) => (
-                            <div
-                              key={attachment.url}
-                              className={cn(
-                                "flex items-center gap-2 text-xs rounded-lg p-2 border",
-                                msg.role === "user"
-                                  ? "bg-primary/20 border-primary/20"
-                                  : "bg-muted/50 border-border/30"
-                              )}
-                            >
-                              <span>📎</span>
-                              <a
-                                href={attachment.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="truncate hover:underline"
+                      {/* Display attachments if they exist */}
+                      {conversationData?.messages?.find((m) => m.id === msg.id)
+                        ?.attachments && (
+                        <div className="mt-3 space-y-2">
+                          {conversationData.messages
+                            .find((m) => m.id === msg.id)
+                            ?.attachments?.map((attachment) => (
+                              <div
+                                key={attachment.url}
+                                className={cn(
+                                  "flex items-center gap-2 text-xs rounded-lg p-2 border",
+                                  msg.role === "user"
+                                    ? "bg-primary/20 border-primary/20"
+                                    : "bg-muted/50 border-border/30"
+                                )}
                               >
-                                {attachment.name}
-                              </a>
-                            </div>
-                          ))}
+                                <span>📎</span>
+                                <a
+                                  href={attachment.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="truncate hover:underline"
+                                >
+                                  {attachment.name}
+                                </a>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Message Actions - Always on the right */}
+                    {!isEditing && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                        {/* Copy button for all messages */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyMessage(msg.content);
+                          }}
+                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                          title="Copy message"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+
+                        {/* Edit button for user messages */}
+                        {msg.role === "user" && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditMessage(msg.id, msg.content);
+                            }}
+                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                            title="Edit message"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+
+                        {/* Retry button for all messages */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRetryMessage(index, msg.id);
+                          }}
+                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                          title="Retry from this message"
+                          disabled={aiIsLoading}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+
+                        {/* Branch button for assistant messages */}
+                        {msg.role === "assistant" && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBranchFromMessage(msg.id);
+                            }}
+                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                            title="Branch conversation from this message"
+                          >
+                            <GitBranch className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
 
-                  {/* Message metadata and actions - Only show provider/timestamp for assistant messages */}
+                  {/* Message metadata - Only show provider/timestamp for assistant messages */}
                   {msg.role === "assistant" && !isEditing && (
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      {/* Timestamp and provider info */}
-                      <div className="flex items-center gap-2">
-                        <span>
-                          {formatTimestamp(getMessageTimestamp(msg.id))}
-                        </span>
-                        <span className="text-muted-foreground/60">
-                          {formatProviderName(messageProviderModel.provider)} •{" "}
-                          {formatModelName(
-                            messageProviderModel.provider,
-                            messageProviderModel.model
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Message Actions */}
-                  {!isEditing && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* Copy button for all messages */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyMessage(msg.content);
-                        }}
-                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                        title="Copy message"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </button>
-
-                      {/* Edit button for user messages */}
-                      {msg.role === "user" && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditMessage(msg.id, msg.content);
-                          }}
-                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                          title="Edit message"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-
-                      {/* Retry button for all messages */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRetryMessage(index, msg.id);
-                        }}
-                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                        title="Retry from this message"
-                        disabled={aiIsLoading}
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                      </button>
-
-                      {/* Branch button for assistant messages */}
-                      {msg.role === "assistant" && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleBranchFromMessage(msg.id);
-                          }}
-                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                          title="Branch conversation from this message"
-                        >
-                          <GitBranch className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                      <span>
+                        {formatTimestamp(getMessageTimestamp(msg.id))}
+                      </span>
+                      <span className="text-muted-foreground/60">
+                        {formatProviderName(messageProviderModel.provider)} •{" "}
+                        {formatModelName(
+                          messageProviderModel.provider,
+                          messageProviderModel.model
+                        )}
+                      </span>
                     </div>
                   )}
                 </div>

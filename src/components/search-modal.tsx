@@ -51,11 +51,7 @@ export function SearchModal({
   };
 
   return (
-    <CommandDialog
-      open={open}
-      onOpenChange={setOpen}
-      className="bg-background/95 backdrop-blur-md border border-border/30 shadow-lg"
-    >
+    <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput placeholder="Search conversations..." />
       <CommandList>
         <CommandEmpty>No conversations found.</CommandEmpty>
