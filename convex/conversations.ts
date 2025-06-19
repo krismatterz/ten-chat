@@ -284,8 +284,13 @@ export const updateMessage = mutation({
 
     // Update the message content
     const updatedMessages = [...messages];
+    const messageToUpdate = updatedMessages[messageIndex];
+    if (!messageToUpdate) {
+      throw new Error("Message not found in array");
+    }
+
     updatedMessages[messageIndex] = {
-      ...updatedMessages[messageIndex],
+      ...messageToUpdate,
       content,
     };
 

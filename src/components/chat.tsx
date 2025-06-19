@@ -14,10 +14,15 @@ import {
   Brain,
   ChevronDown,
   ChevronRight,
+  Search,
+  Settings,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import { AI_PROVIDERS, type ProviderType } from "~/lib/providers";
 import {
   cn,
@@ -30,6 +35,8 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { AIProviderSelector } from "./ai-provider-selector";
 import { FileUpload } from "./file-upload";
+import { SearchModal } from "./search-modal";
+import { SettingsModal } from "./settings-modal";
 import { Button } from "./ui/button";
 import { SidebarTrigger } from "./ui/sidebar";
 import {
@@ -134,9 +141,12 @@ function ThinkingButton({
 
 export function Chat({ chatId }: ChatProps) {
   const router = useRouter();
+  const { setTheme, theme } = useTheme();
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load persistent AI preferences from localStorage
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>(() => {
@@ -236,14 +246,16 @@ export function Chat({ chatId }: ChatProps) {
           console.error("❌ Failed to save AI message to Convex:", error);
         }
       }
+      setIsSubmitting(false);
     },
     onError: (error) => {
       console.error("💥 Chat API error:", error);
+      setIsSubmitting(false);
     },
   });
 
   // Use loading state from AI SDK v4
-  const aiIsLoading = isLoading;
+  const aiIsLoading = isLoading || isSubmitting;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -322,6 +334,8 @@ export function Chat({ chatId }: ChatProps) {
     if (!input.trim() && attachments.length === 0) return;
     if (aiIsLoading) return; // Prevent duplicate submissions
 
+    setIsSubmitting(true);
+
     try {
       let convId = conversationId;
 
@@ -385,6 +399,7 @@ export function Chat({ chatId }: ChatProps) {
       }
     } catch (error) {
       console.error("Failed to send message:", error);
+      setIsSubmitting(false);
     }
   };
 
@@ -512,32 +527,34 @@ export function Chat({ chatId }: ChatProps) {
           const newMessages = [...messagesToKeep, updatedMessage];
           setAiMessages(newMessages);
 
-          // Trigger new AI response
-          const syntheticEvent = {
+          // Trigger new AI response using the updated message content
+          const fakeEvent = {
             preventDefault: () => {},
-          } as React.FormEvent;
-          const previousInput = input;
+            target: {
+              elements: {
+                message: { value: editingContent },
+              },
+            },
+          } as unknown as React.FormEvent;
 
-          // Set input to edited content temporarily
+          // Temporarily update input to edited content
+          const currentInput = input;
           handleInputChange({
             target: { value: editingContent },
           } as React.ChangeEvent<HTMLTextAreaElement>);
 
-          // Wait for state update then submit
+          // Submit after short delay to ensure state is updated
           setTimeout(async () => {
             try {
-              await aiHandleSubmit(syntheticEvent);
+              await aiHandleSubmit(fakeEvent);
               // Reset input
               handleInputChange({
-                target: { value: previousInput },
+                target: { value: currentInput },
               } as React.ChangeEvent<HTMLTextAreaElement>);
             } catch (error) {
               console.error("Failed to generate new AI response:", error);
-              handleInputChange({
-                target: { value: previousInput },
-              } as React.ChangeEvent<HTMLTextAreaElement>);
             }
-          }, 100);
+          }, 50);
         }
       } else {
         // For assistant messages, just update locally
@@ -633,8 +650,8 @@ export function Chat({ chatId }: ChatProps) {
         return;
       }
 
-      let lastUserMessage;
-      let retryFromMessageId;
+      let lastUserMessage: typeof currentMessage | undefined;
+      let retryFromMessageId: string | undefined;
 
       if (currentMessage.role === "user") {
         // Retrying from a user message
@@ -687,7 +704,15 @@ export function Chat({ chatId }: ChatProps) {
         lastUserMessage.content
       );
 
-      const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
+      const fakeEvent = {
+        preventDefault: () => {},
+        target: {
+          elements: {
+            message: { value: lastUserMessage.content },
+          },
+        },
+      } as unknown as React.FormEvent;
+
       const previousInput = input;
 
       // Set input to the user message content temporarily
@@ -698,7 +723,7 @@ export function Chat({ chatId }: ChatProps) {
       // Wait for state update then submit
       setTimeout(async () => {
         try {
-          await aiHandleSubmit(syntheticEvent);
+          await aiHandleSubmit(fakeEvent);
           console.log("✅ AI resubmitted successfully");
           // Reset input back to what it was
           handleInputChange({
@@ -710,7 +735,7 @@ export function Chat({ chatId }: ChatProps) {
             target: { value: previousInput },
           } as React.ChangeEvent<HTMLTextAreaElement>);
         }
-      }, 100);
+      }, 50);
 
       // Show success notification
       const notification = document.createElement("div");
@@ -763,14 +788,43 @@ export function Chat({ chatId }: ChatProps) {
 
   return (
     <div className="flex h-full flex-col relative z-10">
-      {/* Header with Sidebar Toggle */}
-      <div className="flex items-center gap-3 p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dawn-gradient">
-        <SidebarTrigger className="shrink-0" />
+      {/* Top navigation bar with controls */}
+      <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-3">
+          <SidebarTrigger className="shrink-0" />
+          <Button variant="ghost" size="sm" className="flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            <span className="text-sm">Search</span>
+            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSettingsOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="flex items-center gap-2"
+          >
+            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </Button>
+        </div>
       </div>
 
       {/* Messages - This will take available space and scroll independently */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        <div className="mx-auto max-w-3xl space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="mx-auto max-w-4xl ml-auto mr-16 space-y-6">
           {aiMessages.length === 0 ? (
             <div className="flex h-full items-center justify-center min-h-[60vh]">
               <div className="text-center space-y-4">
@@ -782,8 +836,8 @@ export function Chat({ chatId }: ChatProps) {
                     Start a conversation
                   </h3>
                   <p className="mt-2 text-muted-foreground max-w-md">
-                    Ask {currentProvider?.name} anything. Share files, images,
-                    or start with a question.
+                    Ask Ten Chat anything. Share files, images, or search old
+                    conversations.
                   </p>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
@@ -825,7 +879,6 @@ export function Chat({ chatId }: ChatProps) {
                             }
                           }}
                           className="w-full resize-none bg-background/90 text-foreground border border-border/50 rounded-lg p-3 min-h-[60px] focus:border-ring focus:ring-1 focus:ring-ring focus:outline-none"
-                          autoFocus
                           placeholder="Edit your message..."
                         />
                         <div className="flex gap-2 text-xs text-muted-foreground">
@@ -884,14 +937,14 @@ export function Chat({ chatId }: ChatProps) {
                     )}
                   </div>
 
-                  {/* Message metadata and actions */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    {/* Timestamp and provider info */}
-                    <div className="flex items-center gap-2">
-                      <span>
-                        {formatTimestamp(getMessageTimestamp(msg.id))}
-                      </span>
-                      {msg.role === "assistant" && (
+                  {/* Message metadata and actions - Only show provider/timestamp for assistant messages */}
+                  {msg.role === "assistant" && !isEditing && (
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      {/* Timestamp and provider info */}
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {formatTimestamp(getMessageTimestamp(msg.id))}
+                        </span>
                         <span className="text-muted-foreground/60">
                           {formatProviderName(messageProviderModel.provider)} •{" "}
                           {formatModelName(
@@ -899,71 +952,71 @@ export function Chat({ chatId }: ChatProps) {
                             messageProviderModel.model
                           )}
                         </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Message Actions */}
+                  {!isEditing && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Copy button for all messages */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyMessage(msg.content);
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Copy message"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Edit button for user messages */}
+                      {msg.role === "user" && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditMessage(msg.id, msg.content);
+                          }}
+                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                          title="Edit message"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+
+                      {/* Retry button for all messages */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRetryMessage(index, msg.id);
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title="Retry from this message"
+                        disabled={aiIsLoading}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Branch button for assistant messages */}
+                      {msg.role === "assistant" && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBranchFromMessage(msg.id);
+                          }}
+                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                          title="Branch conversation from this message"
+                        >
+                          <GitBranch className="h-3.5 w-3.5" />
+                        </button>
                       )}
                     </div>
-
-                    {/* Message Actions */}
-                    {!isEditing && (
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {/* Copy button for all messages */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopyMessage(msg.content);
-                          }}
-                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                          title="Copy message"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-
-                        {/* Edit button for user messages */}
-                        {msg.role === "user" && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditMessage(msg.id, msg.content);
-                            }}
-                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                            title="Edit message"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-
-                        {/* Retry button for all messages */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRetryMessage(index, msg.id);
-                          }}
-                          className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                          title="Retry from this message"
-                          disabled={aiIsLoading}
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                        </button>
-
-                        {/* Branch button for assistant messages */}
-                        {msg.role === "assistant" && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleBranchFromMessage(msg.id);
-                            }}
-                            className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                            title="Branch conversation from this message"
-                          >
-                            <GitBranch className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               );
             })
@@ -993,8 +1046,8 @@ export function Chat({ chatId }: ChatProps) {
       </div>
 
       {/* Fixed Input Area at Bottom */}
-      <div className="shrink-0 border-t border-border/30 px-6 py-6 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-3xl space-y-4">
+      <div className="shrink-0 border-t border-border/30 px-4 py-6 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto max-w-4xl ml-auto mr-16 space-y-4">
           {/* File Upload Dropdown */}
           {showUpload && (
             <div className="border border-border/30 rounded-xl p-4 bg-background/60 backdrop-blur-md shadow-lg">
@@ -1048,7 +1101,7 @@ export function Chat({ chatId }: ChatProps) {
             {/* Controls Row */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                {/* AI Provider Selector - Moved back here */}
+                {/* AI Provider Selector */}
                 <AIProviderSelector
                   selectedProvider={selectedProvider}
                   selectedModel={selectedModel}
@@ -1100,6 +1153,12 @@ export function Chat({ chatId }: ChatProps) {
         accept="image/*,.pdf,.txt,.md,.doc,.docx,.csv,.json,.js,.ts,.html,.css"
         className="hidden"
       />
+
+      {/* Search Modal */}
+      <SearchModal />
+
+      {/* Settings Modal */}
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

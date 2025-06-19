@@ -65,10 +65,13 @@ export function formatProviderName(provider: string): string {
 export function formatModelName(provider: string, model: string): string {
   // Handle OpenRouter models specially
   if (provider === "openrouter") {
-    // Handle DeepSeek models
+    // Handle DeepSeek models - preserve version numbers
     if (model.includes("deepseek")) {
       if (model.includes("deepseek-r1")) {
-        return "DeepSeek R1";
+        // Extract version number if present (e.g., "0528")
+        const versionMatch = model.match(/(\d{4})/);
+        const version = versionMatch ? ` ${versionMatch[1]}` : "";
+        return `DeepSeek R1${version}`;
       }
       if (model.includes("deepseek-reasoner")) {
         return "DeepSeek Reasoner";
