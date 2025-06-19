@@ -14,6 +14,7 @@ export default defineSchema({
     defaultModel: v.optional(v.string()),
     defaultReasoningLevel: v.optional(v.string()),
     theme: v.optional(v.string()),
+    favoriteModels: v.optional(v.array(v.string())),
 
     // Activity Tracking
     createdAt: v.float64(),

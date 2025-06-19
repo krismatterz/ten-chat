@@ -193,16 +193,75 @@ export const updatePreferences = mutation({
     if (existingPrefs) {
       await ctx.db.patch(existingPrefs._id, updates);
       return existingPrefs._id;
-    } else {
-      return await ctx.db.insert("userPreferences", {
-        userId: user._id,
-        displayName: displayName || user.name || "User",
-        jobTitle: jobTitle || "",
-        traits: traits || ["helpful", "concise"],
-        additionalInfo: additionalInfo || "",
-        createdAt: now,
-        updatedAt: now,
+    }
+
+    return await ctx.db.insert("userPreferences", {
+      userId: user._id,
+      displayName: displayName || user.name || "User",
+      jobTitle: jobTitle || "",
+      traits: traits || ["helpful", "concise"],
+      additionalInfo: additionalInfo || "",
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+// Get user's favorite models
+export const getFavoriteModels = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    return user.favoriteModels || [];
+  },
+});
+
+// Add a model to favorites
+export const addFavoriteModel = mutation({
+  args: { model: v.string() },
+  handler: async (ctx, { model }) => {
+    const user = await requireUser(ctx);
+    const currentFavorites = user.favoriteModels || [];
+
+    if (!currentFavorites.includes(model)) {
+      await ctx.db.patch(user._id, {
+        favoriteModels: [...currentFavorites, model],
+        lastActiveAt: Date.now(),
       });
     }
+  },
+});
+
+// Remove a model from favorites
+export const removeFavoriteModel = mutation({
+  args: { model: v.string() },
+  handler: async (ctx, { model }) => {
+    const user = await requireUser(ctx);
+    const currentFavorites = user.favoriteModels || [];
+
+    await ctx.db.patch(user._id, {
+      favoriteModels: currentFavorites.filter((m) => m !== model),
+      lastActiveAt: Date.now(),
+    });
+  },
+});
+
+// Toggle favorite model
+export const toggleFavoriteModel = mutation({
+  args: { model: v.string() },
+  handler: async (ctx, { model }) => {
+    const user = await requireUser(ctx);
+    const currentFavorites = user.favoriteModels || [];
+
+    const newFavorites = currentFavorites.includes(model)
+      ? currentFavorites.filter((m) => m !== model)
+      : [...currentFavorites, model];
+
+    await ctx.db.patch(user._id, {
+      favoriteModels: newFavorites,
+      lastActiveAt: Date.now(),
+    });
+
+    return newFavorites;
   },
 });

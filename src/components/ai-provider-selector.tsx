@@ -16,8 +16,10 @@ import {
   Zap,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { type AIProvider, AI_PROVIDERS } from "~/lib/providers";
 import { cn } from "~/lib/utils";
+import { api } from "../../convex/_generated/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -31,17 +33,8 @@ interface AIProviderSelectorProps {
   onReasoningChange?: (level: "low" | "mid" | "high") => void;
 }
 
-// Mock user favorites
-const USER_FAVORITES = [
-  "claude-3.5-sonnet",
-  "claude-3-7-sonnet-20250219",
-  "claude-4-sonnet-20250522",
-  "gpt-4o",
-  "gpt-4.1-2025-04-14",
-  "o3-mini-2025-01-31",
-  "o3-2025-04-16",
-  "sonar-pro",
-];
+// Default favorites for new users
+const DEFAULT_FAVORITES = ["claude-3.5-sonnet", "gpt-4o", "o3-mini-2025-01-31"];
 
 // Model capabilities
 const MODEL_CAPABILITIES: Record<string, string[]> = {
@@ -138,7 +131,13 @@ export function AIProviderSelector({
 }: AIProviderSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [favorites, setFavorites] = useState<string[]>(USER_FAVORITES);
+
+  // Get user's favorite models from Convex
+  const userFavorites = useQuery(api.users.getFavoriteModels);
+  const toggleFavorite = useMutation(api.users.toggleFavoriteModel);
+
+  // Use user favorites or default favorites
+  const favorites = userFavorites || DEFAULT_FAVORITES;
 
   const currentProvider = AI_PROVIDERS.find((p) => p.id === selectedProvider);
   const displayName = currentProvider?.name || "Select AI";
@@ -191,12 +190,12 @@ export function AIProviderSelector({
     }
   };
 
-  const toggleFavorite = (modelId: string) => {
-    setFavorites((prev) =>
-      prev.includes(modelId)
-        ? prev.filter((id) => id !== modelId)
-        : [...prev, modelId]
-    );
+  const handleToggleFavorite = async (modelId: string) => {
+    try {
+      await toggleFavorite({ model: modelId });
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
   };
 
   const handleFavoriteKeyDown = (
@@ -206,7 +205,7 @@ export function AIProviderSelector({
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       event.stopPropagation();
-      toggleFavorite(modelId);
+      handleToggleFavorite(modelId);
     }
   };
 
@@ -309,7 +308,7 @@ export function AIProviderSelector({
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        toggleFavorite(model.id);
+                        handleToggleFavorite(model.id);
                       }}
                       onKeyDown={(e) => handleFavoriteKeyDown(e, model.id)}
                       className="p-1 hover:bg-muted rounded cursor-pointer"
@@ -387,7 +386,7 @@ export function AIProviderSelector({
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        toggleFavorite(model.id);
+                        handleToggleFavorite(model.id);
                       }}
                       onKeyDown={(e) => handleFavoriteKeyDown(e, model.id)}
                       className="p-1 hover:bg-muted rounded cursor-pointer"
