@@ -146,6 +146,7 @@ export function Chat({ chatId }: ChatProps) {
   const [editingContent, setEditingContent] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [blockSync, setBlockSync] = useState(false);
 
   // Load persistent AI preferences from localStorage
   const [selectedProvider, setSelectedProvider] = useState<ProviderType>(() => {
@@ -249,10 +250,12 @@ export function Chat({ chatId }: ChatProps) {
         }
       }
       setIsSubmitting(false);
+      setBlockSync(false); // Re-enable sync when AI response is complete
     },
     onError: (error) => {
       console.error("💥 Chat API error:", error);
       setIsSubmitting(false);
+      setBlockSync(false); // Re-enable sync on error
     },
   });
 
@@ -274,13 +277,14 @@ export function Chat({ chatId }: ChatProps) {
   }, [conversationId, setAiMessages]);
 
   useEffect(() => {
-    // Only sync when conversation first loads or when not actively submitting
+    // Only sync when conversation first loads and not during any active operations
     if (
       conversationData?.messages &&
       conversationData.messages.length > 0 &&
       !hasInitialized &&
       !isSubmitting && // Don't sync during active submission to prevent race conditions
-      !aiIsLoading // Don't sync during AI response generation
+      !aiIsLoading && // Don't sync during AI response generation
+      !blockSync // Don't sync when explicitly blocked
     ) {
       const formattedMessages = conversationData.messages.map((msg) => ({
         id: msg.id,
@@ -308,6 +312,7 @@ export function Chat({ chatId }: ChatProps) {
     setAiMessages,
     isSubmitting,
     aiIsLoading,
+    blockSync,
   ]); // Include all dependencies
 
   // Direct file upload handler
@@ -339,6 +344,7 @@ export function Chat({ chatId }: ChatProps) {
     if (aiIsLoading) return; // Prevent duplicate submissions
 
     setIsSubmitting(true);
+    setBlockSync(true); // Block Convex sync during message submission
 
     try {
       let convId = conversationId;
@@ -392,52 +398,19 @@ export function Chat({ chatId }: ChatProps) {
         });
       }
 
-      // Clear input and attachments first
-      const messageContent = input.trim();
-      const currentAttachments = [...attachments];
+      // Clear input and attachments before AI submission
       setAttachments([]);
       setShowUpload(false);
 
-      // Reset input immediately to prevent duplicate submissions
-      handleInputChange({
-        target: { value: "" },
-      } as React.ChangeEvent<HTMLTextAreaElement>);
-
-      // Manually add user message to AI SDK state to prevent race condition
-      const userMessage = {
-        id: nanoid(),
-        role: "user" as const,
-        content:
-          messageContent ||
-          (currentAttachments.length > 0
-            ? "I've shared some files with you. Please analyze them."
-            : ""),
-      };
-
-      // Update AI messages state directly to include the user message
-      setAiMessages((prev) => [...prev, userMessage]);
-
-      // For AI SDK, we need to trigger the chat with proper state
-      if (messageContent || currentAttachments.length > 0) {
-        // Create a minimal form event for AI submission
-        const aiEvent = {
-          preventDefault: () => {},
-        } as React.FormEvent;
-
-        try {
-          await aiHandleSubmit(aiEvent);
-        } catch (error) {
-          console.error("Failed to submit to AI:", error);
-          // Remove the user message from AI state on failure
-          setAiMessages((prev) =>
-            prev.filter((msg) => msg.id !== userMessage.id)
-          );
-          setIsSubmitting(false);
-        }
+      // For AI SDK, we need to trigger the chat
+      // The attachments will be included via the body.attachments parameter
+      if (input.trim() || attachments.length > 0) {
+        await aiHandleSubmit(e);
       }
     } catch (error) {
       console.error("Failed to send message:", error);
       setIsSubmitting(false);
+      setBlockSync(false); // Re-enable sync on error
     }
   };
 
