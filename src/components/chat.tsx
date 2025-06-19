@@ -1147,6 +1147,15 @@ export function Chat({ chatId }: ChatProps) {
                   onReasoningChange={handleReasoningChange}
                 />
 
+                {/* Thinking Button - Only show for reasoning-capable models */}
+                {supportsReasoning(selectedModel) && (
+                  <ThinkingButton
+                    reasoningLevel={reasoningLevel}
+                    onReasoningChange={handleReasoningChange}
+                    disabled={aiIsLoading}
+                  />
+                )}
+
                 {/* Direct File Upload Button */}
                 <Button
                   type="button"
@@ -1159,15 +1168,6 @@ export function Chat({ chatId }: ChatProps) {
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
-
-                {/* Thinking Button - Only show for reasoning-capable models */}
-                {supportsReasoning(selectedModel) && (
-                  <ThinkingButton
-                    reasoningLevel={reasoningLevel}
-                    onReasoningChange={handleReasoningChange}
-                    disabled={aiIsLoading}
-                  />
-                )}
               </div>
 
               {attachments.length > 0 && (

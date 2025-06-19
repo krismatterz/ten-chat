@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Button } from "~/components/ui/button";
@@ -15,15 +15,40 @@ export default function HomePage() {
 
   const createConversation = useMutation(api.conversations.create);
 
+  // Auto-redirect function for signed-in users
+  const autoRedirectToChat = useCallback(async () => {
+    if (isCreatingChat) return;
+
+    setIsCreatingChat(true);
+    try {
+      const selectedProvider =
+        (localStorage.getItem("tenchat-provider") as string) || "anthropic";
+      const selectedModel =
+        localStorage.getItem("tenchat-model") || "claude-3.5-sonnet";
+
+      const conversationId = await createConversation({
+        title: "New Chat",
+        model: selectedModel,
+        provider: selectedProvider,
+      });
+      router.push(`/chat/${conversationId}`);
+    } catch (error) {
+      console.error("Failed to create conversation:", error);
+      setIsCreatingChat(false);
+    }
+  }, [isCreatingChat, createConversation, router]);
+
   useEffect(() => {
     if (isLoaded && !hasRedirected.current) {
       hasRedirected.current = true;
       if (!isSignedIn) {
         router.push("/sign-in");
+      } else {
+        // Automatically create new chat for signed-in users
+        autoRedirectToChat();
       }
-      // Don't redirect signed-in users, show chat interface here
     }
-  }, [isSignedIn, isLoaded, router]);
+  }, [isSignedIn, isLoaded, router, autoRedirectToChat]);
 
   const handleNewChat = async () => {
     if (isCreatingChat) return;

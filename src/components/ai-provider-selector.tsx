@@ -23,7 +23,6 @@ import { api } from "../../convex/_generated/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { ThinkingModeSelector } from "./ui/thinking-mode-selector";
 
 interface AIProviderSelectorProps {
   selectedProvider: string;
@@ -423,14 +422,6 @@ export function AIProviderSelector({
           </div>
         </PopoverContent>
       </Popover>
-
-      {/* Reasoning Level Control */}
-      {supportsReasoning(selectedModel) && onReasoningChange && (
-        <ThinkingModeSelector
-          reasoningLevel={reasoningLevel}
-          onReasoningChange={onReasoningChange}
-        />
-      )}
     </div>
   );
 }
