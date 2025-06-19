@@ -80,6 +80,8 @@ export default defineSchema({
           model: v.optional(v.string()),
           tokenCount: v.optional(v.number()),
           inferenceSpeed: v.optional(v.number()), // tokens/second
+          responseStartTime: v.optional(v.number()),
+          responseEndTime: v.optional(v.number()),
 
           // Attachments
           attachments: v.optional(

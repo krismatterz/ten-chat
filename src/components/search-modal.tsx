@@ -37,13 +37,13 @@ export function SearchModal({
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((prevOpen) => !prevOpen);
+        setOpen(!open);
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [setOpen]);
+  }, [setOpen, open]);
 
   const handleSelect = (conversationId: string) => {
     setOpen(false);

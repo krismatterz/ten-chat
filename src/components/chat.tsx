@@ -36,7 +36,6 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { AIProviderSelector } from "./ai-provider-selector";
 import { FileUpload } from "./file-upload";
 import { SearchModal } from "./search-modal";
-import { SettingsModal } from "./settings-modal";
 import { Button } from "./ui/button";
 import { SidebarTrigger } from "./ui/sidebar";
 import {
@@ -145,7 +144,6 @@ export function Chat({ chatId }: ChatProps) {
   const [isFirstMessage, setIsFirstMessage] = useState(true);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -206,6 +204,9 @@ export function Chat({ chatId }: ChatProps) {
     api.conversations.get,
     conversationId ? { conversationId } : "skip"
   );
+
+  // Query user preferences for personalized assistant
+  const userPrefs = useQuery(api.users.getPreferences);
 
   // AI Chat hook for streaming (AI SDK v4 stable)
   const {
@@ -811,7 +812,7 @@ export function Chat({ chatId }: ChatProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => router.push("/settings")}
             className="flex items-center gap-2"
           >
             <Settings className="h-4 w-4" />
@@ -835,16 +836,31 @@ export function Chat({ chatId }: ChatProps) {
             <div className="flex h-full items-center justify-center min-h-[60vh]">
               <div className="text-center space-y-4">
                 <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <span className="text-2xl">💬</span>
+                  <span className="text-2xl">🤖</span>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">
-                    Start a conversation
+                    {userPrefs?.displayName
+                      ? `Hi ${userPrefs.displayName}! I'm Ten Chat, how can I help you?`
+                      : "Hi! I'm Ten Chat, how can I help you?"}
                   </h3>
-                  <p className="mt-2 text-muted-foreground max-w-md">
-                    Ask Ten Chat anything. Share files, images, or search old
-                    conversations.
-                  </p>
+                  <div className="mt-3 space-y-2">
+                    {userPrefs?.traits && userPrefs.traits.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        I'll be {userPrefs.traits.slice(0, 3).join(", ")} in our
+                        conversation.
+                      </p>
+                    )}
+                    {userPrefs?.jobTitle && (
+                      <p className="text-sm text-muted-foreground">
+                        I understand you work as a {userPrefs.jobTitle}.
+                      </p>
+                    )}
+                    <p className="text-muted-foreground max-w-md">
+                      Ask me anything, share files, images, or search old
+                      conversations.
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
                   <span>
@@ -1162,9 +1178,6 @@ export function Chat({ chatId }: ChatProps) {
 
       {/* Search Modal */}
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
-
-      {/* Settings Modal */}
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }
